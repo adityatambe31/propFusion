@@ -43,6 +43,8 @@ export interface AssetDetail {
     name: string;
     rentAmount?: string;
     paymentStatus?: string;
+    leaseStart?: string;
+    leaseEnd?: string;
   }[];
   coordinates?: { lat: number; lng: number };
   description?: string;
@@ -81,6 +83,7 @@ export interface AssetDetail {
 
 export interface ReportData {
   title: string;
+  reportType?: "revenue" | "occupancy" | "maintenance" | "summary" | "crop";
   dateRange: string;
   assetType?: string;
   stats: { label: string; value: string; accent?: string }[];
@@ -362,6 +365,31 @@ const s = StyleSheet.create({
     borderRadius: 6,
   },
   tenantName: { fontSize: 9, color: DARK, marginLeft: 6 },
+
+  /* Summary highlights */
+  highlightSection: { marginTop: 16 },
+  highlightTitle: {
+    fontSize: 12,
+    fontFamily: "Helvetica-Bold",
+    color: DARK,
+    marginBottom: 8,
+  },
+  highlightCard: {
+    borderWidth: 1,
+    borderColor: GRAY_BORDER,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 8,
+  },
+  highlightRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  highlightLabel: { fontSize: 9, color: GRAY },
+  highlightValue: { fontSize: 10, fontFamily: "Helvetica-Bold", color: DARK },
+  highlightSub: { fontSize: 8, color: GRAY },
 });
 
 /* ─── Helpers ─── */
@@ -387,6 +415,53 @@ function colWidth(totalCols: number) {
 
 function val(v?: string | number | null) {
   return v != null && v !== "" ? String(v) : "—";
+}
+
+function moneyToNumber(v?: string | number | null): number {
+  if (typeof v === "number") return Number.isFinite(v) ? v : 0;
+  if (!v) return 0;
+  const cleaned = String(v).replace(/,/g, "").replace(/[^0-9.-]/g, "");
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatMoney(n: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(n);
+}
+
+function findBestNumericColumn(report: ReportData): string | null {
+  const candidates = [
+    "Net Profit",
+    "Profit",
+    "Revenue",
+    "Value",
+    "Price",
+    "Expenses",
+  ];
+
+  const byPriority = candidates.find((c) => report.columns.includes(c));
+  if (byPriority) return byPriority;
+
+  const inferred = report.columns.find((col) => {
+    const key = col.toLowerCase();
+    return (
+      key.includes("revenue") ||
+      key.includes("profit") ||
+      key.includes("value") ||
+      key.includes("price") ||
+      key.includes("expense")
+    );
+  });
+
+  return inferred || null;
+}
+
+function pickAssetName(row: Record<string, string>): string {
+  return row.Property || row.Land || row.Asset || row.Name || "Unnamed Asset";
 }
 
 /* ─── Shared Header ─── */
@@ -500,6 +575,26 @@ function TocPage({ report, mode }: { report: ReportData; mode: ReportMode }) {
 /* ─── Executive Summary ─── */
 function SummaryPage({ report }: { report: ReportData }) {
   const c = accent(report.assetType);
+  const keyMetricCol = findBestNumericColumn(report);
+
+  const topAssets = keyMetricCol
+    ? [...report.rows]
+        .sort(
+          (a, b) =>
+            moneyToNumber(b[keyMetricCol]) - moneyToNumber(a[keyMetricCol]),
+        )
+        .slice(0, 3)
+    : [];
+
+  const statusCol = report.columns.includes("Status") ? "Status" : null;
+  const statusCounts = statusCol
+    ? report.rows.reduce<Record<string, number>>((acc, row) => {
+        const status = row[statusCol] || "Unknown";
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      }, {})
+    : null;
+
   return (
     <Page size="A4" style={s.page}>
       <Header report={report} />
@@ -516,6 +611,37 @@ function SummaryPage({ report }: { report: ReportData }) {
           </View>
         ))}
       </View>
+
+      <View style={s.highlightSection}>
+        <Text style={s.highlightTitle}>Highlights</Text>
+
+        {topAssets.length > 0 && keyMetricCol && (
+          <View style={s.highlightCard}>
+            <Text style={[s.highlightSub, { marginBottom: 6 }]}>Top assets by {keyMetricCol}</Text>
+            {topAssets.map((row, index) => (
+              <View key={`${pickAssetName(row)}-${index}`} style={s.highlightRow}>
+                <Text style={s.highlightLabel}>
+                  {index + 1}. {pickAssetName(row)}
+                </Text>
+                <Text style={s.highlightValue}>{val(row[keyMetricCol])}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {statusCounts && Object.keys(statusCounts).length > 0 && (
+          <View style={s.highlightCard}>
+            <Text style={[s.highlightSub, { marginBottom: 6 }]}>Status distribution</Text>
+            {Object.entries(statusCounts).map(([status, count]) => (
+              <View key={status} style={s.highlightRow}>
+                <Text style={s.highlightLabel}>{status}</Text>
+                <Text style={s.highlightValue}>{count}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+
       <Footer />
     </Page>
   );
@@ -596,6 +722,43 @@ function AssetProfilePage({
 }) {
   const c = accent(report.assetType);
   const isRE = report.assetType?.toLowerCase().includes("real") || !!asset.type;
+  const reportType = report.reportType || "summary";
+  const isSummary = reportType === "summary";
+  const isRevenue = reportType === "revenue";
+  const isOccupancy = reportType === "occupancy";
+  const isMaintenance = reportType === "maintenance";
+  const isCrop = reportType === "crop";
+  const propertyExpenses = isRE
+    ? (asset.expenses as PropertyExpenses | undefined)
+    : undefined;
+  const agricultureExpenses = !isRE
+    ? ((asset.landExpenses as LandExpenses | undefined) ||
+      (asset.expenses as unknown as LandExpenses | undefined))
+    : undefined;
+
+  const revenueLike = isRE ? moneyToNumber(asset.price) : moneyToNumber(asset.revenue || asset.profit);
+  const expenseTotal = isRE
+    ? propertyExpenses
+      ? moneyToNumber(propertyExpenses.maintenance) +
+        moneyToNumber(propertyExpenses.taxes) +
+        moneyToNumber(propertyExpenses.insurance) +
+        moneyToNumber(propertyExpenses.utilities) +
+        moneyToNumber(propertyExpenses.loanEMI) +
+        moneyToNumber(propertyExpenses.managementFees) +
+        moneyToNumber(propertyExpenses.other)
+      : 0
+    : agricultureExpenses
+      ? moneyToNumber(agricultureExpenses.seeds) +
+        moneyToNumber(agricultureExpenses.labor) +
+        moneyToNumber(agricultureExpenses.equipment) +
+        moneyToNumber(agricultureExpenses.fertilizers) +
+        moneyToNumber(agricultureExpenses.pesticides) +
+        moneyToNumber(agricultureExpenses.irrigation) +
+        moneyToNumber(agricultureExpenses.taxes) +
+        moneyToNumber(agricultureExpenses.insurance) +
+        moneyToNumber(agricultureExpenses.other)
+      : 0;
+  const netEstimate = revenueLike - expenseTotal;
 
   return (
     <Page size="A4" style={s.page} wrap>
@@ -631,40 +794,61 @@ function AssetProfilePage({
         <Field label="Description" value={asset.description} />
       )}
 
-      {/* Financial */}
-      <Text style={s.sectionTitle}>Financial Details</Text>
-      {isRE && <Field label="Monthly Rent / Price" value={val(asset.price)} />}
-      {isRE && (
-        <Field label="Purchase Price" value={val(asset.purchasePrice)} />
-      )}
-      {isRE && <Field label="Current Value" value={val(asset.currentValue)} />}
-      {!isRE && <Field label="Annual Revenue" value={val(asset.revenue)} />}
-      {!isRE && <Field label="Annual Profit" value={val(asset.profit)} />}
-      {!isRE && (
-        <Field label="Purchase Price" value={val(asset.purchasePrice)} />
-      )}
-      {!isRE && <Field label="Current Value" value={val(asset.currentValue)} />}
-      <Field label="Lease Duration" value={val(asset.leaseDuration)} />
-      {isRE && <Field label="Lease Start" value={val(asset.leaseStartDate)} />}
-      {isRE && <Field label="Lease End" value={val(asset.leaseEndDate)} />}
-      {!isRE && (
-        <Field label="Lease Holder" value={val(asset.leaseHolderName)} />
+      {(isSummary || isRevenue || (!isRE && isCrop)) && (
+        <>
+          <Text style={s.sectionTitle}>Financial Details</Text>
+          {isRE && <Field label="Monthly Rent / Price" value={val(asset.price)} />}
+          {isRE && (
+            <Field label="Purchase Price" value={val(asset.purchasePrice)} />
+          )}
+          {isRE && <Field label="Current Value" value={val(asset.currentValue)} />}
+          {!isRE && <Field label="Annual Revenue" value={val(asset.revenue)} />}
+          {!isRE && <Field label="Annual Profit" value={val(asset.profit)} />}
+          {!isRE && (
+            <Field label="Purchase Price" value={val(asset.purchasePrice)} />
+          )}
+          {!isRE && <Field label="Current Value" value={val(asset.currentValue)} />}
+          {revenueLike > 0 && (
+            <Field
+              label={isRE ? "Estimated Gross Monthly Income" : "Estimated Gross Annual Income"}
+              value={formatMoney(revenueLike)}
+            />
+          )}
+          {expenseTotal > 0 && (
+            <Field
+              label={isRE ? "Estimated Total Monthly Expenses" : "Estimated Total Annual Expenses"}
+              value={formatMoney(expenseTotal)}
+            />
+          )}
+          {(revenueLike > 0 || expenseTotal > 0) && (
+            <Field
+              label={isRE ? "Estimated Net Monthly" : "Estimated Net Annual"}
+              value={formatMoney(netEstimate)}
+            />
+          )}
+          <Field label="Lease Duration" value={val(asset.leaseDuration)} />
+          {isRE && <Field label="Lease Start" value={val(asset.leaseStartDate)} />}
+          {isRE && <Field label="Lease End" value={val(asset.leaseEndDate)} />}
+          {!isRE && (
+            <Field label="Lease Holder" value={val(asset.leaseHolderName)} />
+          )}
+        </>
       )}
 
       {/* Expense Breakdown - Real Estate */}
-      {isRE && asset.expenses && (
+      {isRE && propertyExpenses && (isSummary || isRevenue || isMaintenance) && (
         <>
           <Text style={s.sectionTitle}>Monthly Expense Breakdown</Text>
-          <Field label="Maintenance" value={val(asset.expenses.maintenance)} />
-          <Field label="Property Taxes" value={val(asset.expenses.taxes)} />
-          <Field label="Insurance" value={val(asset.expenses.insurance)} />
-          <Field label="Utilities" value={val(asset.expenses.utilities)} />
-          <Field label="Loan EMI" value={val(asset.expenses.loanEMI)} />
+          <Field label="Maintenance" value={val(propertyExpenses.maintenance)} />
+          <Field label="Property Taxes" value={val(propertyExpenses.taxes)} />
+          <Field label="Insurance" value={val(propertyExpenses.insurance)} />
+          <Field label="Utilities" value={val(propertyExpenses.utilities)} />
+          <Field label="Loan EMI" value={val(propertyExpenses.loanEMI)} />
           <Field
             label="Management Fees"
-            value={val(asset.expenses.managementFees)}
+            value={val(propertyExpenses.managementFees)}
           />
-          <Field label="Other" value={val(asset.expenses.other)} />
+          <Field label="Other" value={val(propertyExpenses.other)} />
           <Field
             label="Last Maintenance"
             value={val(asset.lastMaintenanceDate)}
@@ -673,32 +857,32 @@ function AssetProfilePage({
       )}
 
       {/* Expense Breakdown - Agriculture */}
-      {!isRE && asset.landExpenses && (
+      {!isRE && agricultureExpenses && (isSummary || isRevenue || isCrop) && (
         <>
           <Text style={s.sectionTitle}>Annual Expense Breakdown</Text>
-          <Field label="Seeds" value={val(asset.landExpenses.seeds)} />
-          <Field label="Labor" value={val(asset.landExpenses.labor)} />
-          <Field label="Equipment" value={val(asset.landExpenses.equipment)} />
+          <Field label="Seeds" value={val(agricultureExpenses.seeds)} />
+          <Field label="Labor" value={val(agricultureExpenses.labor)} />
+          <Field label="Equipment" value={val(agricultureExpenses.equipment)} />
           <Field
             label="Fertilizers"
-            value={val(asset.landExpenses.fertilizers)}
+            value={val(agricultureExpenses.fertilizers)}
           />
           <Field
             label="Pesticides"
-            value={val(asset.landExpenses.pesticides)}
+            value={val(agricultureExpenses.pesticides)}
           />
           <Field
             label="Irrigation"
-            value={val(asset.landExpenses.irrigation)}
+            value={val(agricultureExpenses.irrigation)}
           />
-          <Field label="Taxes" value={val(asset.landExpenses.taxes)} />
-          <Field label="Insurance" value={val(asset.landExpenses.insurance)} />
-          <Field label="Other" value={val(asset.landExpenses.other)} />
+          <Field label="Taxes" value={val(agricultureExpenses.taxes)} />
+          <Field label="Insurance" value={val(agricultureExpenses.insurance)} />
+          <Field label="Other" value={val(agricultureExpenses.other)} />
         </>
       )}
 
       {/* Yield & Harvest - Agriculture */}
-      {!isRE && (
+      {!isRE && (isSummary || isCrop) && (
         <>
           <Text style={s.sectionTitle}>Yield & Harvest</Text>
           <Field label="Yield per Acre" value={val(asset.yieldPerAcre)} />
@@ -708,7 +892,7 @@ function AssetProfilePage({
         </>
       )}
 
-      {isRE && (
+      {isRE && (isSummary || isMaintenance) && (
         <>
           {/* Property Details */}
           <Text style={s.sectionTitle}>Property Details</Text>
@@ -719,7 +903,7 @@ function AssetProfilePage({
         </>
       )}
 
-      {!isRE && (
+      {!isRE && (isSummary || isCrop) && (
         <>
           {/* Agriculture Details */}
           <Text style={s.sectionTitle}>Agriculture Details</Text>
@@ -731,12 +915,17 @@ function AssetProfilePage({
       )}
 
       {/* Tenants */}
-      {asset.tenants?.length > 0 && (
+      {asset.tenants?.length > 0 && (isSummary || isOccupancy || isMaintenance) && (
         <>
           <Text style={s.sectionTitle}>Tenants ({asset.tenants.length})</Text>
           {asset.tenants.map((t, i) => (
             <View key={t.id || i} style={s.tenantRow}>
-              <Text style={s.tenantName}>• {t.name}</Text>
+              <Text style={s.tenantName}>
+                • {t.name}
+                {t.rentAmount ? ` — ${t.rentAmount}` : ""}
+                {t.paymentStatus ? ` (${t.paymentStatus})` : ""}
+                {t.leaseEnd ? ` • Lease End: ${t.leaseEnd}` : ""}
+              </Text>
             </View>
           ))}
         </>

@@ -14,7 +14,7 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider
       attribute="class"
-      defaultTheme="dark"
+      defaultTheme="light"
       enableSystem
       disableTransitionOnChange
     >
@@ -28,7 +28,6 @@ export function Providers({ children }: { children: ReactNode }) {
         }}
         Link={Link}
         emailVerification={true}
-        signUpFields={["name"]}
       >
         {children}
       </AuthUIProvider>

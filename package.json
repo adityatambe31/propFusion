@@ -9,8 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.80.0",
+    "@anthropic-ai/sdk": "^0.82.0",
     "@daveyplate/better-auth-ui": "^3.3.10",
+    "@lucide/lab": "^0.1.2",
     "@radix-ui/react-checkbox": "^1.1.0",
     "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -25,7 +26,7 @@
     "better-sqlite3": "^12.5.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "jspdf": "^2.5.1",
+    "jspdf": "^4.2.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.562.0",
     "mongodb": "^7.0.0",

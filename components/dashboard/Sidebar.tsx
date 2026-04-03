@@ -12,11 +12,12 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
-  X,
+  Icon,
   User,
   Settings,
   LogOut,
 } from "lucide-react";
+import { farm } from "@lucide/lab";
 import Image from "next/image";
 import {
   getUserAvatarColor,
@@ -35,9 +36,159 @@ const menuItems = [
   },
 ];
 
+type RealEstateIconVariant =
+  | "home-modern"
+  | "home"
+  | "office"
+  | "office-2"
+  | "library"
+  | "storefront";
+
+function RealEstateIcon({
+  variant,
+  className = "h-5 w-5",
+}: {
+  variant: RealEstateIconVariant;
+  className?: string;
+}) {
+  if (variant === "home-modern") {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+        stroke="currentColor"
+        className={className}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M8.25 21v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21m0 0h4.5V3.545M12.75 21h7.5V10.75M2.25 21h1.5m18 0h-18M2.25 9l4.5-1.636M18.75 3l-1.5.545m0 6.205 3 1m1.5.5-1.5-.5M6.75 7.364V3h-3v18m3-13.636 10.5-3.819"
+        />
+      </svg>
+    );
+  }
+
+  if (variant === "home") {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+        stroke="currentColor"
+        className={className}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"
+        />
+      </svg>
+    );
+  }
+
+  if (variant === "office") {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+        stroke="currentColor"
+        className={className}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"
+        />
+      </svg>
+    );
+  }
+
+  if (variant === "office-2") {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+        stroke="currentColor"
+        className={className}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M2.25 21h19.5M4.5 3.75h6.75v17.25H4.5V3.75Zm8.25 5.25h6.75V21h-6.75V9Zm3-3h3.75V9h-3.75V6Zm-9 1.5h1.5m-1.5 3h1.5m-1.5 3h1.5m7.5 0h1.5m-1.5 3h1.5"
+        />
+      </svg>
+    );
+  }
+
+  if (variant === "library") {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+        stroke="currentColor"
+        className={className}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M3 21h18M4.5 18h15M6 18V9m3 9V9m3 9V9m3 9V9m3 9V9M12 3l9 4.5H3L12 3Z"
+        />
+      </svg>
+    );
+  }
+
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className={className}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 21h18M5.25 21V8.25A2.25 2.25 0 0 1 7.5 6h9a2.25 2.25 0 0 1 2.25 2.25V21M9 10.5h6m-6 3h6m-6 3h6M8.25 6V4.875c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125V6"
+      />
+    </svg>
+  );
+}
+
+const realEstateIconVariants: RealEstateIconVariant[] = [
+  "home-modern",
+  "home",
+  "library",
+  "office",
+  "office-2",
+  "storefront",
+];
+
+function getRealEstateIconVariant(seed: string, index = 0): RealEstateIconVariant {
+  const total = realEstateIconVariants.length;
+  let hash = 0;
+
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+
+  return realEstateIconVariants[(hash + index) % total];
+}
+
 export function Sidebar({
-  type = "default", // "agriculture" | "real-estate" | "default"
-  data = [], // lands or properties
+  type = "default",
+  data = [],
+  isMobileOpen = false,
+  setIsMobileOpen = () => {},
 }: {
   type?: "agriculture" | "real-estate" | "default";
   data?: Array<{
@@ -45,12 +196,13 @@ export function Sidebar({
     name: string;
     tenants?: Array<{ id: string; name: string }>;
   }>;
+  isMobileOpen?: boolean;
+  setIsMobileOpen?: (open: boolean) => void;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = authClient.useSession();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -81,19 +233,10 @@ export function Sidebar({
       }
     }
 
-    function handleToggleMobileSidebar() {
-      setIsMobileOpen((prev) => !prev);
-    }
-
     document.addEventListener("mousedown", handleClickOutside);
-    window.addEventListener("toggleMobileSidebar", handleToggleMobileSidebar);
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
-      window.removeEventListener(
-        "toggleMobileSidebar",
-        handleToggleMobileSidebar,
-      );
     };
   }, []);
 
@@ -138,12 +281,12 @@ export function Sidebar({
       )}
 
       <div
-        className={`flex flex-col min-h-screen bg-white dark:bg-black text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-800 transition-all duration-300 ease-in-out z-50 ${
+        className={`flex flex-col h-screen bg-white dark:bg-black text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-800 transition-all duration-300 ease-in-out z-50 ${
           isMobileOpen
             ? "fixed left-0 top-0"
-            : "fixed -left-full top-0 lg:relative lg:left-0"
+            : "fixed -left-full lg:sticky top-0"
         }`}
-        style={{ width: isCollapsed ? "4rem" : "14rem" }}
+        style={{ width: isCollapsed ? "4.5rem" : "16rem" }}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
@@ -173,8 +316,9 @@ export function Sidebar({
               </div>
             </div>
             <div className="flex items-center gap-1">
-              {/* Notification Bell — hidden when collapsed */}
-              {!isCollapsed && <NotificationBell />}
+              <div className="hidden lg:block">
+                {!isCollapsed && <NotificationBell align="left" />}
+              </div>
               <button
                 onClick={() => setIsCollapsed(!isCollapsed)}
                 className={`p-1.5 hover:bg-gray-100 dark:hover:bg-[#0a0a0a] rounded-lg transition-colors shrink-0 ${isCollapsed ? "mx-auto mt-12" : ""}`}
@@ -185,14 +329,6 @@ export function Sidebar({
                 ) : (
                   <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 )}
-              </button>
-              {/* Mobile close button */}
-              <button
-                onClick={() => setIsMobileOpen(false)}
-                className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-[#0a0a0a] rounded-lg transition-colors"
-                title="Close sidebar"
-              >
-                <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               </button>
             </div>
           </div>
@@ -277,7 +413,13 @@ export function Sidebar({
                         `}
                         title={isCollapsed ? property.name : undefined}
                       >
-                        <span className="text-lg">🏢</span>
+                        <span className="text-gray-500 dark:text-gray-400">
+                          <RealEstateIcon
+                            variant={getRealEstateIconVariant(
+                              `${property.id}-${property.name}`,
+                            )}
+                          />
+                        </span>
                         {!isCollapsed && (
                           <span className="truncate">{property.name}</span>
                         )}
@@ -337,7 +479,10 @@ export function Sidebar({
                         `}
                         title={isCollapsed ? land.name : undefined}
                       >
-                        <span className="text-lg">🌱</span>
+                        <Icon
+                          iconNode={farm}
+                          className="h-5 w-5 text-green-600 dark:text-green-400"
+                        />
                         {!isCollapsed && (
                           <span className="truncate">{land.name}</span>
                         )}
@@ -383,7 +528,16 @@ export function Sidebar({
                       : "text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900"
                   } rounded-lg`}
                 >
-                  <span>{type === "agriculture" ? "🌱" : "🏢"}</span>
+                  <span>
+                    {type === "agriculture" ? (
+                      <Icon
+                        iconNode={farm}
+                        className="h-5 w-5 text-green-600 dark:text-green-400"
+                      />
+                    ) : (
+                      <RealEstateIcon variant="office" className="h-5 w-5" />
+                    )}
+                  </span>
                   <span className="flex-1 text-left">
                     {type === "agriculture"
                       ? "Agriculture Lands"

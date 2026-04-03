@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Sidebar } from "@/components/dashboard/Sidebar";
 import {
   Select,
   SelectTrigger,
@@ -11,8 +10,10 @@ import {
   SelectGroup,
   SelectLabel,
 } from "@/components/ui/select";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
+import { Plus, Search, Filter, LayoutGrid, Map as MapIcon, ChevronRight, Sprout, Droplets, Thermometer, Wind, Pencil, Trash2, Calendar, FileText, TrendingUp, AlertTriangle } from "lucide-react";
 import {
   useAgricultureContext,
   Land,
@@ -21,6 +22,19 @@ import {
 } from "./agriculture-context";
 import { geocodeAddress } from "@/lib/helpers/geocode";
 import { SingleImageUpload } from "@/components/shared/ImageUpload";
+import { SearchFilter, useSearchFilter } from "@/components/shared/SearchFilter";
+import { 
+  Home, 
+  Users, 
+  DollarSign, 
+  AlertCircle, 
+  PlusCircle,
+  MapPin,
+  Maximize2,
+  Tag,
+  Droplet
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 // Dynamically import Map component to avoid SSR issues
 const MapComponent = dynamic(
@@ -171,6 +185,37 @@ export default function AgricultureDashboard() {
     setCurrentStep(1); // Reset step
   };
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
+  const [activeSort, setActiveSort] = useState("name-asc");
+
+  const filteredLands = useSearchFilter(
+    lands,
+    ["name", "location", "city", "state", "crop"],
+    searchQuery,
+    activeFilters,
+    (item, filters) => {
+      if (filters.crop && filters.crop !== "all" && item.crop !== filters.crop) return false;
+      if (filters.irrigation && filters.irrigation !== "all" && item.irrigation !== filters.irrigation) return false;
+      if (filters.state && filters.state !== "all" && item.state !== filters.state) return false;
+      return true;
+    },
+    activeSort,
+    (a, b, sortKey) => {
+      switch (sortKey) {
+        case "name-asc": return a.name.localeCompare(b.name);
+        case "name-desc": return b.name.localeCompare(a.name);
+        case "area-desc": return parseFloat(b.area) - parseFloat(a.area);
+        case "profit-desc": return parseFloat(b.profit.replace(/[^0-9.]/g, "")) - parseFloat(a.profit.replace(/[^0-9.]/g, ""));
+        default: return 0;
+      }
+    }
+  );
+
+  const totalAcreage = lands.reduce((acc, land) => acc + parseFloat(land.area.replace(/[^0-9.]/g, "") || "0"), 0);
+  const totalRevenue = lands.reduce((acc, land) => acc + parseFloat(land.profit.replace(/[^0-9.]/g, "") || "0"), 0);
+  const activeOps = lands.filter(l => (l.animals?.length || 0) > 0 || (l.vehicles?.length || 0) > 0).length;
+
   const handleDeleteLand = (id: string) => {
     deleteLand(id);
   };
@@ -256,178 +301,282 @@ export default function AgricultureDashboard() {
   };
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar type="agriculture" />
-      <main className="flex-1 p-8">
-        <h1 className="text-3xl font-bold mb-6">Agriculture Dashboard</h1>
-        <div className="flex gap-4 mb-8">
+    <main className="flex-1 p-4 sm:p-8 max-w-7xl mx-auto w-full">
+        <h1 className="text-3xl font-bold mb-6 dark:text-white">Agriculture Dashboard</h1>
+
+        {/* Summary Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white dark:bg-[#181818] p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm transition-all hover:shadow-md">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center text-green-600 dark:text-green-400">
+                <Sprout className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-medium text-gray-400">Total</span>
+            </div>
+            <p className="text-sm font-medium text-gray-500 mb-1">Total Lands</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {lands.length}
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-[#181818] p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm transition-all hover:shadow-md">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                <Maximize2 className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-medium text-blue-500">Scale</span>
+            </div>
+            <p className="text-sm font-medium text-gray-500 mb-1">Total Acreage</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {totalAcreage.toLocaleString()} <span className="text-sm font-normal text-gray-400">acres</span>
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-[#181818] p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm transition-all hover:shadow-md">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                <DollarSign className="w-5 h-5" />
+              </div>
+              <div className="flex items-center gap-1 text-xs font-medium text-amber-500">
+                <TrendingUp className="w-3 h-3" /> +8%
+              </div>
+            </div>
+            <p className="text-sm font-medium text-gray-500 mb-1">Annual Revenue</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              ${totalRevenue.toLocaleString()}
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-[#181818] p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm transition-all hover:shadow-md">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-600 dark:text-red-400">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-medium text-red-500">Operations</span>
+            </div>
+            <p className="text-sm font-medium text-gray-500 mb-1">Active Operations</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {activeOps}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-4 mb-6">
           <Button
             onClick={() => setShowMap(false)}
             variant={!showMap ? "default" : "outline"}
+            className={cn("rounded-xl", !showMap ? "" : "dark:text-white")}
           >
-            Lands
+            <LayoutGrid className={cn("w-4 h-4 mr-2", !showMap ? "" : "dark:text-white")} />
+            Lands List
           </Button>
           <Button
             onClick={() => setShowMap(true)}
             variant={showMap ? "default" : "outline"}
+            className={cn("rounded-xl", showMap ? "" : "dark:text-white")}
           >
+            <MapIcon className={cn("w-4 h-4 mr-2", showMap ? "" : "dark:text-white")} />
             Map View
           </Button>
-          <Button onClick={() => setShowAddModal(true)} variant="outline">
-            + Add Land
+          <Button 
+            onClick={() => {
+              setCurrentStep(1);
+              setShowAddModal(true);
+            }} 
+            variant="outline"
+            className="rounded-xl dark:text-white"
+          >
+            <PlusCircle className="w-4 h-4 mr-2" />
+            Add Land
           </Button>
         </div>
+
+        {/* Search and Filter */}
+        {!showMap && lands.length > 0 && (
+          <div className="mb-6">
+            <SearchFilter
+              searchPlaceholder="Search lands..."
+              onSearchChange={setSearchQuery}
+              filters={[
+                {
+                  label: "Land Use",
+                  key: "crop",
+                  options: [
+                    { label: "Cropland", value: "Cropland" },
+                    { label: "Pasture", value: "Pasture" },
+                    { label: "Timber", value: "Timber" },
+                    { label: "Vineyard", value: "Vineyard" },
+                    { label: "Greenhouse", value: "Greenhouse" },
+                  ],
+                },
+                {
+                  label: "Irrigation",
+                  key: "irrigation",
+                  options: [
+                    { label: "Center Pivot", value: "Center Pivot" },
+                    { label: "Drip", value: "Drip" },
+                    { label: "Well", value: "Well" },
+                    { label: "Rainfed", value: "Rainfed" },
+                  ],
+                },
+                {
+                  label: "State",
+                  key: "state",
+                  options: [
+                    { label: "Iowa", value: "IA" },
+                    { label: "California", value: "CA" },
+                    { label: "Texas", value: "TX" },
+                    { label: "Washington", value: "WA" },
+                    { label: "Ontario", value: "ON" },
+                  ],
+                },
+              ]}
+              onFilterChange={(key, value) => setActiveFilters(prev => ({ ...prev, [key]: value }))}
+              activeFilters={activeFilters}
+              sortOptions={[
+                { label: "Name (A-Z)", value: "name-asc" },
+                { label: "Name (Z-A)", value: "name-desc" },
+                { label: "Area (High-Low)", value: "area-desc" },
+                { label: "Profit (High-Low)", value: "profit-desc" },
+              ]}
+              onSortChange={setActiveSort}
+              activeSort={activeSort}
+            />
+          </div>
+        )}
+
         {!showMap ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-            {lands.length === 0 ? (
-              <div className="col-span-full text-center py-12 text-gray-500">
-                <p className="text-lg mb-2">No lands added yet</p>
-                <p className="text-sm">
-                  Click &quot;+ Add Land&quot; to get started
-                </p>
+            {filteredLands.length === 0 ? (
+              <div className="col-span-full text-center py-12 text-gray-500 bg-white dark:bg-[#181818] rounded-2xl border border-dashed border-gray-200 dark:border-gray-800">
+                <Search className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p className="text-lg font-medium mb-1 dark:text-white">No lands found</p>
+                <p className="text-sm">Try adjusting your search or filters</p>
               </div>
             ) : (
-              lands.map((land, idx) => (
+              filteredLands.map((land, idx) => (
                 <div
                   key={land.id}
-                  className="bg-white dark:bg-[#181818] rounded-xl shadow-lg p-4 sm:p-5 md:p-6 cursor-pointer hover:shadow-2xl transition-all duration-200 relative border border-gray-100 dark:border-gray-800"
+                  className="bg-white dark:bg-[#181818] rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer group relative border border-gray-100 dark:border-gray-800 flex flex-col overflow-hidden"
                   onClick={(e) => {
                     if ((e.target as HTMLElement).closest("button")) return;
                     handleLandClick(land.id);
                   }}
                 >
-                  <button
-                    className="absolute top-3 right-3 text-red-500 hover:text-red-700 text-lg font-bold bg-white dark:bg-gray-900 rounded-full w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center shadow-md hover:scale-110 transition z-10"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteLand(land.id);
-                    }}
-                    title="Delete Land"
-                    aria-label="Delete land"
-                  >
-                    ×
-                  </button>
-                  <button
-                    className="absolute top-3 right-10 sm:right-12 text-blue-500 hover:text-blue-700 text-lg font-bold bg-white dark:bg-gray-900 rounded-full w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center shadow-md hover:scale-110 transition z-10"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditLand(land, idx);
-                    }}
-                    title="Edit Land"
-                    aria-label="Edit land"
-                  >
-                    ✎
-                  </button>
-
-                  {/* Land Image */}
-                  <div className="mb-3 md:mb-4 -mx-4 sm:-mx-5 md:-mx-6 -mt-4 sm:-mt-5 md:-mt-6 rounded-t-xl overflow-hidden">
+                  {/* Land Image Container */}
+                  <div className="relative h-48 overflow-hidden">
                     <img
                       src={getLandImage(land)}
                       alt={land.name || "Land"}
-                      className="w-full h-32 sm:h-36 md:h-40 object-cover"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
-                  </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    
+                    {/* Status Badge */}
+                    <div className="absolute top-3 left-3 flex gap-2">
+                      <span className={cn(
+                        "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md text-white border",
+                        land.leaseDuration === "Owned" 
+                          ? "bg-blue-500/80 border-blue-400" 
+                          : "bg-green-500/80 border-green-400"
+                      )}>
+                        {land.leaseDuration === "Owned" ? "Owned" : "Leased"}
+                      </span>
+                    </div>
 
-                  <div className="mt-3 md:mt-4">
-                    <h2 className="text-lg sm:text-xl font-bold mb-1 text-gray-900 dark:text-white line-clamp-1">
-                      {land.name || "Unnamed Property"}
-                    </h2>
-                    <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400 flex-wrap line-clamp-1">
-                      <span>{land.location}</span>
-                      {land.city && <span>•</span>}
-                      {land.city && <span>{land.city}</span>}
-                      {land.state && <span>, {land.state}</span>}
-                      {land.zip && <span> {land.zip}</span>}
+                    <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 translate-y-[-10px] group-hover:translate-y-0 transition-all duration-300">
+                      <button
+                        className="w-8 h-8 rounded-full bg-white/90 dark:bg-gray-900/90 flex items-center justify-center text-blue-600 shadow-lg hover:bg-blue-600 hover:text-white transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditLand(land, idx);
+                        }}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        className="w-8 h-8 rounded-full bg-white/90 dark:bg-gray-900/90 flex items-center justify-center text-red-600 shadow-lg hover:bg-red-600 hover:text-white transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteLand(land.id);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
 
-                  <div className="space-y-1.5 sm:space-y-2 mb-3 md:mb-4">
-                    {land.crop && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                          Land Use:
-                        </span>
-                        <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
-                          {land.crop}
-                        </span>
-                      </div>
-                    )}
-                    {land.area && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                          Acreage:
-                        </span>
-                        <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
-                          {land.area}
+                  <div className="p-5 flex-1 flex flex-col">
+                    <div className="mb-4">
+                      <h2 className="text-xl font-bold text-gray-900 dark:text-white line-clamp-1 mb-1">
+                        {land.name || "Unnamed Land"}
+                      </h2>
+                      <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-300">
+                        <MapPin className="w-3.5 h-3.5 shrink-0" />
+                        <span className="line-clamp-1">
+                          {land.location}{land.city ? `, ${land.city}` : ""}{land.state ? ` (${land.state})` : ""}
                         </span>
                       </div>
-                    )}
-                    {land.zoning && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                          Zoning:
-                        </span>
-                        <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
-                          {land.zoning}
-                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-y-3 gap-x-4 mb-4">
+                      <div className="space-y-0.5">
+                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-tight">Land Use</p>
+                        <div className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
+                          <Tag className="w-3.5 h-3.5 text-green-500" />
+                          <span>{land.crop}</span>
+                        </div>
                       </div>
-                    )}
-                    {land.irrigation && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                          Irrigation:
-                        </span>
-                        <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
-                          {land.irrigation}
-                        </span>
+                      <div className="space-y-0.5">
+                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-tight">Acreage</p>
+                        <div className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
+                          <Maximize2 className="w-3.5 h-3.5 text-blue-500" />
+                          <span>{land.area}</span>
+                        </div>
                       </div>
-                    )}
-                    {land.leaseDuration && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                          Lease:
-                        </span>
-                        <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
-                          {land.leaseDuration}
-                        </span>
+                      <div className="space-y-0.5">
+                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-tight">Zoning</p>
+                        <div className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
+                          <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+                          <span>{land.zoning || "N/A"}</span>
+                        </div>
                       </div>
-                    )}
-                    {land.profit && (
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
-                        <span className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">
-                          Annual Rent/Profit:
-                        </span>
-                        <span className="text-xs sm:text-sm font-bold text-green-600">
-                          {land.profit}
-                        </span>
+                      <div className="space-y-0.5">
+                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-tight">Irrigation</p>
+                        <div className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
+                          <Droplet className="w-3.5 h-3.5 text-blue-400" />
+                          <span>{land.irrigation || "Rainfed"}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-auto pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                      <p className="text-xs text-gray-400">Annual Rent/Profit</p>
+                      <p className="text-base font-bold text-green-600 dark:text-green-400">
+                        {land.profit}
+                      </p>
+                    </div>
+
+                    {(land.animals.length > 0 || land.vehicles.length > 0) && (
+                      <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-gray-100 dark:border-gray-800">
+                        {land.animals.slice(0, 2).map((animal) => (
+                          <span key={animal} className="px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-[10px] font-medium">
+                            {animal}
+                          </span>
+                        ))}
+                        {land.vehicles.slice(0, 2).map((vehicle) => (
+                          <span key={vehicle} className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[10px] font-medium">
+                            {vehicle}
+                          </span>
+                        ))}
+                        {(land.animals.length + land.vehicles.length) > 4 && (
+                          <span className="text-[10px] text-gray-400 self-center">
+                            +{(land.animals.length + land.vehicles.length) - 4} more
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
-
-                  {(land.animals.length > 0 || land.vehicles.length > 0) && (
-                    <div className="pt-2 sm:pt-3 border-t border-gray-100 dark:border-gray-700">
-                      {land.animals.length > 0 && (
-                        <div className="mb-1 sm:mb-2">
-                          <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
-                            Livestock:{" "}
-                          </span>
-                          <span className="text-[10px] sm:text-xs font-medium text-gray-700 dark:text-gray-300">
-                            {land.animals.join(", ")}
-                          </span>
-                        </div>
-                      )}
-                      {land.vehicles.length > 0 && (
-                        <div>
-                          <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
-                            Structures:{" "}
-                          </span>
-                          <span className="text-[10px] sm:text-xs font-medium text-gray-700 dark:text-gray-300">
-                            {land.vehicles.join(", ")}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               ))
             )}
@@ -449,7 +598,7 @@ export default function AgricultureDashboard() {
 
         {/* Add/Edit Land Modal */}
         {showAddModal && (
-          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-[10000] p-4">
             <div className="bg-white dark:bg-[#181818] rounded-2xl shadow-2xl p-0 md:p-8 w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
               <button
                 className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 text-2xl"
@@ -468,13 +617,13 @@ export default function AgricultureDashboard() {
                 </h2>
                 <div className="flex items-center gap-2 mb-6">
                   <div
-                    className={`h-2 rounded-full flex-1 ${currentStep >= 1 ? "bg-green-600" : "bg-gray-200"}`}
+                    className={`h-2 rounded-full flex-1 ${currentStep >= 1 ? "bg-green-600" : "bg-gray-200 dark:bg-gray-700"}`}
                   />
                   <div
-                    className={`h-2 rounded-full flex-1 ${currentStep >= 2 ? "bg-green-600" : "bg-gray-200"}`}
+                    className={`h-2 rounded-full flex-1 ${currentStep >= 2 ? "bg-green-600" : "bg-gray-200 dark:bg-gray-700"}`}
                   />
                 </div>
-                <p className="text-gray-500 mb-6 text-base">
+                <p className="text-gray-500 dark:text-gray-300 mb-6 text-base">
                   {currentStep === 1
                     ? "Step 1: Basic Property Information"
                     : "Step 2: Operations & Details"}
@@ -486,12 +635,12 @@ export default function AgricultureDashboard() {
                   {currentStep === 1 && (
                     <>
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Property Name{" "}
-                          <span className="text-gray-400">(Optional)</span>
+                          <span className="text-gray-400 dark:text-gray-500">(Optional)</span>
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="e.g. Maple Acres Ranch"
                           value={newLand.name}
                           onChange={(e) =>
@@ -500,12 +649,12 @@ export default function AgricultureDashboard() {
                         />
                       </div>
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Parcel Number{" "}
-                          <span className="text-gray-400">(APN, optional)</span>
+                          <span className="text-gray-400 dark:text-gray-500">(APN, optional)</span>
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="Parcel/APN"
                           value={newLand.parcelNumber || ""}
                           onChange={(e) =>
@@ -517,11 +666,11 @@ export default function AgricultureDashboard() {
                         />
                       </div>
                       <div className="flex flex-col gap-2 md:col-span-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Address <span className="text-red-500">*</span>
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="123 Main St"
                           value={newLand.location}
                           onChange={(e) =>
@@ -531,7 +680,7 @@ export default function AgricultureDashboard() {
                         />
                       </div>
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           City <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -545,7 +694,7 @@ export default function AgricultureDashboard() {
                         />
                       </div>
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           State/Province <span className="text-red-500">*</span>
                         </label>
                         <Select
@@ -640,12 +789,12 @@ export default function AgricultureDashboard() {
                         </Select>
                       </div>
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           ZIP/Postal Code{" "}
                           <span className="text-red-500">*</span>
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="Zip Code"
                           value={newLand.zip || ""}
                           onChange={(e) =>
@@ -655,12 +804,12 @@ export default function AgricultureDashboard() {
                         />
                       </div>
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Acreage <span className="text-red-500">*</span>
                         </label>
                         <div className="flex items-center gap-2">
                           <input
-                            className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                             placeholder="e.g., 40"
                             type="number"
                             step="0.01"
@@ -678,13 +827,13 @@ export default function AgricultureDashboard() {
                             }}
                             required
                           />
-                          <span className="text-gray-500 whitespace-nowrap">
+                          <span className="text-gray-500 dark:text-gray-400 whitespace-nowrap">
                             acres
                           </span>
                         </div>
                       </div>
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Land Use
                         </label>
                         <Select
@@ -693,12 +842,12 @@ export default function AgricultureDashboard() {
                             setNewLand({ ...newLand, crop: value })
                           }
                         >
-                          <SelectTrigger className="w-full max-w-full">
+                          <SelectTrigger className="w-full max-w-full dark:bg-gray-800 dark:text-white dark:border-gray-700">
                             <SelectValue placeholder="e.g., Cropland, Pasture, Timber" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="dark:bg-gray-900 dark:border-gray-700">
                             <SelectGroup>
-                              <SelectLabel>Land Use</SelectLabel>
+                              <SelectLabel className="dark:text-gray-400">Land Use</SelectLabel>
                               <SelectItem value="Cropland">Cropland</SelectItem>
                               <SelectItem value="Pasture">Pasture</SelectItem>
                               <SelectItem value="Timber">Timber</SelectItem>
@@ -712,7 +861,7 @@ export default function AgricultureDashboard() {
                         </Select>
                       </div>
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Zoning
                         </label>
                         <Select
@@ -721,12 +870,12 @@ export default function AgricultureDashboard() {
                             setNewLand({ ...newLand, zoning: value })
                           }
                         >
-                          <SelectTrigger className="w-full">
+                          <SelectTrigger className="w-full dark:bg-gray-800 dark:text-white dark:border-gray-700">
                             <SelectValue placeholder="Select Zoning Type" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="dark:bg-gray-900 dark:border-gray-700">
                             <SelectGroup>
-                              <SelectLabel>Zoning Types</SelectLabel>
+                              <SelectLabel className="dark:text-gray-400">Zoning Types</SelectLabel>
                               <SelectItem value="Agricultural">
                                 Agricultural (A)
                               </SelectItem>
@@ -764,7 +913,7 @@ export default function AgricultureDashboard() {
                         </Select>
                       </div>
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Irrigation
                         </label>
                         <Select
@@ -773,12 +922,12 @@ export default function AgricultureDashboard() {
                             setNewLand({ ...newLand, irrigation: value })
                           }
                         >
-                          <SelectTrigger className="w-full">
+                          <SelectTrigger className="w-full dark:bg-gray-800 dark:text-white dark:border-gray-700">
                             <SelectValue placeholder="Select Irrigation Type" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="dark:bg-gray-900 dark:border-gray-700">
                             <SelectGroup>
-                              <SelectLabel>Irrigation Types</SelectLabel>
+                              <SelectLabel className="dark:text-gray-400">Irrigation Types</SelectLabel>
                               <SelectItem value="Well">Well Water</SelectItem>
                               <SelectItem value="Municipal">
                                 Municipal Water
@@ -826,7 +975,7 @@ export default function AgricultureDashboard() {
                   {currentStep === 2 && (
                     <>
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Structures
                         </label>
                         <Select
@@ -853,12 +1002,12 @@ export default function AgricultureDashboard() {
                             setNewLand({ ...newLand, vehicles: structuresArr });
                           }}
                         >
-                          <SelectTrigger className="w-full">
+                          <SelectTrigger className="w-full dark:bg-gray-800 dark:text-white dark:border-gray-700">
                             <SelectValue placeholder="Select Structures" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="dark:bg-gray-900 dark:border-gray-700">
                             <SelectGroup>
-                              <SelectLabel>Structures</SelectLabel>
+                              <SelectLabel className="dark:text-gray-400">Structures</SelectLabel>
                               <SelectItem value="Barn">Barn</SelectItem>
                               <SelectItem value="House">House</SelectItem>
                               <SelectItem value="Shed">Shed</SelectItem>
@@ -879,7 +1028,7 @@ export default function AgricultureDashboard() {
                               {newLand.vehicles.map((structure) => (
                                 <span
                                   key={structure}
-                                  className="bg-gray-100 rounded px-2 py-0.5 text-xs flex items-center"
+                                  className="bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:border dark:border-gray-700 rounded px-2 py-0.5 text-xs flex items-center"
                                 >
                                   {structure}
                                   <button
@@ -914,7 +1063,7 @@ export default function AgricultureDashboard() {
                           )}
                       </div>
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Livestock
                         </label>
                         <Select
@@ -939,10 +1088,10 @@ export default function AgricultureDashboard() {
                             setNewLand({ ...newLand, animals: animalsArr });
                           }}
                         >
-                          <SelectTrigger className="w-full">
+                          <SelectTrigger className="w-full dark:bg-gray-800 dark:text-white dark:border-gray-700">
                             <SelectValue placeholder="e.g., Cattle, Sheep" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="dark:bg-gray-900 dark:border-gray-700">
                             <SelectItem value="Cattle">Cattle</SelectItem>
                             <SelectItem value="Sheep">Sheep</SelectItem>
                             <SelectItem value="Goat">Goat</SelectItem>
@@ -957,7 +1106,7 @@ export default function AgricultureDashboard() {
                               {newLand.animals.map((animal) => (
                                 <span
                                   key={animal}
-                                  className="bg-gray-100 rounded px-2 py-0.5 text-xs flex items-center"
+                                  className="bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:border dark:border-gray-700 rounded px-2 py-0.5 text-xs flex items-center"
                                 >
                                   {animal}
                                   <button
@@ -991,7 +1140,7 @@ export default function AgricultureDashboard() {
                           )}
                       </div>
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Fertilizers Used
                         </label>
                         <Select
@@ -1021,12 +1170,12 @@ export default function AgricultureDashboard() {
                             });
                           }}
                         >
-                          <SelectTrigger className="w-full">
+                          <SelectTrigger className="w-full dark:bg-gray-800 dark:text-white dark:border-gray-700">
                             <SelectValue placeholder="Select Fertilizers" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="dark:bg-gray-900 dark:border-gray-700">
                             <SelectGroup>
-                              <SelectLabel>Fertilizers</SelectLabel>
+                              <SelectLabel className="dark:text-gray-400">Fertilizers</SelectLabel>
                               <SelectItem value="Urea">Urea</SelectItem>
                               <SelectItem value="DAP">
                                 DAP (Diammonium Phosphate)
@@ -1055,7 +1204,7 @@ export default function AgricultureDashboard() {
                               {newLand.fertilizers.map((fertilizer) => (
                                 <span
                                   key={fertilizer}
-                                  className="bg-gray-100 rounded px-2 py-0.5 text-xs flex items-center"
+                                  className="bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:border dark:border-gray-700 rounded px-2 py-0.5 text-xs flex items-center"
                                 >
                                   {fertilizer}
                                   <button
@@ -1090,7 +1239,7 @@ export default function AgricultureDashboard() {
                           )}
                       </div>
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Lease Duration
                         </label>
                         <Select
@@ -1099,12 +1248,12 @@ export default function AgricultureDashboard() {
                             setNewLand({ ...newLand, leaseDuration: value })
                           }
                         >
-                          <SelectTrigger className="w-full">
+                          <SelectTrigger className="w-full dark:bg-gray-800 dark:text-white dark:border-gray-700">
                             <SelectValue placeholder="Select Lease Duration" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="dark:bg-gray-900 dark:border-gray-700">
                             <SelectGroup>
-                              <SelectLabel>Lease Duration</SelectLabel>
+                              <SelectLabel className="dark:text-gray-400">Lease Duration</SelectLabel>
                               <SelectItem value="Month-to-Month">
                                 Month-to-Month
                               </SelectItem>
@@ -1128,11 +1277,11 @@ export default function AgricultureDashboard() {
                         </Select>
                       </div>
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Annual Rent/Profit
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="e.g., $50,000/year"
                           value={newLand.profit}
                           onChange={(e) =>
@@ -1141,11 +1290,11 @@ export default function AgricultureDashboard() {
                         />
                       </div>
                       <div className="flex flex-col gap-2 md:col-span-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Lease Holder Name
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="e.g., John Smith"
                           value={newLand.leaseHolderName || ""}
                           onChange={(e) =>
@@ -1157,19 +1306,19 @@ export default function AgricultureDashboard() {
                         />
                       </div>
                       <div className="flex flex-col gap-2 md:col-span-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Documents
                         </label>
                         <div className="space-y-3">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div className="flex flex-col gap-2">
-                              <label className="text-xs text-gray-600">
+                              <label className="text-xs text-gray-600 dark:text-gray-400">
                                 Lease Agreement
                               </label>
                               <input
                                 type="file"
                                 accept=".pdf,.doc,.docx"
-                                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white"
                                 onChange={(e) =>
                                   handleDocumentUpload(e, "lease_agreement")
                                 }
@@ -1177,13 +1326,13 @@ export default function AgricultureDashboard() {
                               />
                             </div>
                             <div className="flex flex-col gap-2">
-                              <label className="text-xs text-gray-600">
+                              <label className="text-xs text-gray-600 dark:text-gray-400">
                                 Bills & Invoices
                               </label>
                               <input
                                 type="file"
                                 accept=".pdf,.doc,.docx,.xls,.xlsx"
-                                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white"
                                 onChange={(e) =>
                                   handleDocumentUpload(e, "bill")
                                 }
@@ -1191,13 +1340,13 @@ export default function AgricultureDashboard() {
                               />
                             </div>
                             <div className="flex flex-col gap-2">
-                              <label className="text-xs text-gray-600">
+                              <label className="text-xs text-gray-600 dark:text-gray-400">
                                 Property Documents
                               </label>
                               <input
                                 type="file"
                                 accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white"
                                 onChange={(e) =>
                                   handleDocumentUpload(e, "property_doc")
                                 }
@@ -1205,13 +1354,13 @@ export default function AgricultureDashboard() {
                               />
                             </div>
                             <div className="flex flex-col gap-2">
-                              <label className="text-xs text-gray-600">
+                              <label className="text-xs text-gray-600 dark:text-gray-400">
                                 Other Documents
                               </label>
                               <input
                                 type="file"
                                 accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
-                                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white"
                                 onChange={(e) =>
                                   handleDocumentUpload(e, "other")
                                 }
@@ -1220,19 +1369,19 @@ export default function AgricultureDashboard() {
                             </div>
                           </div>
                           {(newLand.documents || []).length > 0 && (
-                            <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                              <p className="text-xs font-medium text-gray-700 mb-2">
+                            <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border dark:border-gray-800">
+                              <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Uploaded Documents:
                               </p>
                               <div className="space-y-1">
                                 {newLand.documents?.map((doc) => (
                                   <div
                                     key={doc.id}
-                                    className="flex items-center justify-between text-xs bg-white p-2 rounded border"
+                                    className="flex items-center justify-between text-xs bg-white dark:bg-gray-800 p-2 rounded border dark:border-gray-700"
                                   >
-                                    <span className="text-gray-700 truncate flex-1">
+                                    <span className="text-gray-700 dark:text-gray-200 truncate flex-1">
                                       📄 {doc.name}
-                                      <span className="ml-2 text-gray-500">
+                                      <span className="ml-2 text-gray-500 dark:text-gray-400">
                                         ({doc.type.replace("_", " ")})
                                       </span>
                                     </span>
@@ -1248,13 +1397,13 @@ export default function AgricultureDashboard() {
                                     </button>
                                   </div>
                                 ))}
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </>
-                  )}
+                      </>
+                    )}
 
                   <div className="md:col-span-2 flex justify-between gap-2 mt-4">
                     {currentStep === 1 ? (
@@ -1318,6 +1467,5 @@ export default function AgricultureDashboard() {
           </div>
         )}
       </main>
-    </div>
   );
 }

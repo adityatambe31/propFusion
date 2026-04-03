@@ -11,7 +11,6 @@ const ReportPDFActions = dynamic(
   () => import("@/components/dashboard/ReportPDFActions"),
   { ssr: false },
 );
-import { Sidebar } from "@/components/dashboard/Sidebar";
 import { motion, AnimatePresence } from "motion/react";
 import {
   FileText,
@@ -219,325 +218,309 @@ export default function AgricultureReportsPage() {
   const handleBack = () => setReport(null);
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-black">
-      <Sidebar type="agriculture" />
-      <main className="flex-1 overflow-y-auto">
-        {/* Mobile Menu */}
-        <button
-          onClick={() =>
-            window.dispatchEvent(new CustomEvent("toggleMobileSidebar"))
-          }
-          className="lg:hidden fixed top-4 left-4 z-30 p-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm hover:bg-gray-100 dark:hover:bg-gray-900"
-        >
-          <svg
-            className="w-5 h-5 text-gray-900 dark:text-white"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 6h16M4 12h16M4 18h16"
-            />
-          </svg>
-        </button>
-
-        <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8">
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
-                <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
-              </div>
-              <h1 className="text-3xl sm:text-4xl font-semibold text-gray-900 dark:text-white">
-                Agriculture Reports
-              </h1>
+    <main className="flex-1 p-4 sm:p-6 md:p-8">
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
+              <Sprout className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
-            <p className="text-base text-gray-600 dark:text-gray-400 mt-1">
-              Generate detailed reports for your agriculture lands.
-            </p>
+            <h1 className="text-3xl sm:text-4xl font-semibold text-gray-900 dark:text-white">
+              Agriculture Reports
+            </h1>
           </div>
+          <p className="text-base text-gray-600 dark:text-gray-400 mt-1">
+            Generate detailed reports for your agriculture lands.
+          </p>
+        </div>
 
-          <AnimatePresence mode="wait">
-            {!report ? (
-              <motion.div
-                key="form"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.25 }}
-              >
-                <div className="bg-white dark:bg-[#101010] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
-                  <div className="p-6 sm:p-8 space-y-8">
-                    {/* Report Type */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-3">
-                        Report Type
+        <AnimatePresence mode="wait">
+          {!report ? (
+            <motion.div
+              key="form"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.25 }}
+            >
+              <div className="bg-white dark:bg-[#101010] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
+                <div className="p-6 sm:p-8 space-y-8">
+                  {/* Report Type */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                      Report Type
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {REPORT_TYPES.map((rt) => {
+                        const Icon = rt.icon;
+                        const isActive = reportType === rt.value;
+                        return (
+                          <button
+                            key={rt.value}
+                            type="button"
+                            onClick={() => setReportType(rt.value)}
+                            className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                              isActive
+                                ? "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
+                                : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
+                            }`}
+                          >
+                            <Icon className="w-5 h-5" />
+                            <span className="text-xs font-medium">
+                              {rt.label}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Asset Selection */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="block text-sm font-semibold text-gray-900 dark:text-white">
+                        Select Lands
                       </label>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {REPORT_TYPES.map((rt) => {
-                          const Icon = rt.icon;
-                          const isActive = reportType === rt.value;
+                      {lands.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleSelectAll}
+                          className="text-xs font-medium text-green-600 dark:text-green-400 hover:underline"
+                        >
+                          {selectedAssets.length === lands.length
+                            ? "Deselect All"
+                            : "Select All"}
+                        </button>
+                      )}
+                    </div>
+                    {lands.length === 0 ? (
+                      <div className="text-gray-400 dark:text-gray-500 italic text-sm py-6 text-center border border-dashed border-gray-300 dark:border-gray-700 rounded-xl">
+                        No lands found. Add some from the Agriculture
+                        dashboard first.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {lands.map((l) => {
+                          const isChecked = selectedAssets.includes(l.id);
                           return (
                             <button
-                              key={rt.value}
+                              key={l.id}
                               type="button"
-                              onClick={() => setReportType(rt.value)}
-                              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${isActive
-                                  ? "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
-                                  : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
-                                }`}
+                              onClick={() => handleAssetToggle(l.id)}
+                              className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all text-left ${
+                                isChecked
+                                  ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+                                  : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                              }`}
                             >
-                              <Icon className="w-5 h-5" />
-                              <span className="text-xs font-medium">
-                                {rt.label}
-                              </span>
+                              <div
+                                className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${
+                                  isChecked
+                                    ? "border-green-500 bg-green-500"
+                                    : "border-gray-300 dark:border-gray-600"
+                                }`}
+                              >
+                                {isChecked && (
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                                )}
+                              </div>
+                              <div>
+                                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {l.name}
+                                </span>
+                                <span className="block text-xs text-gray-500 dark:text-gray-400">
+                                  {l.location} • {l.crop}
+                                </span>
+                              </div>
                             </button>
                           );
                         })}
                       </div>
-                    </div>
-
-                    {/* Asset Selection */}
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <label className="block text-sm font-semibold text-gray-900 dark:text-white">
-                          Select Lands
-                        </label>
-                        {lands.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={handleSelectAll}
-                            className="text-xs font-medium text-green-600 dark:text-green-400 hover:underline"
-                          >
-                            {selectedAssets.length === lands.length
-                              ? "Deselect All"
-                              : "Select All"}
-                          </button>
-                        )}
-                      </div>
-                      {lands.length === 0 ? (
-                        <div className="text-gray-400 dark:text-gray-500 italic text-sm py-6 text-center border border-dashed border-gray-300 dark:border-gray-700 rounded-xl">
-                          No lands found. Add some from the Agriculture
-                          dashboard first.
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {lands.map((l) => {
-                            const isChecked = selectedAssets.includes(l.id);
-                            return (
-                              <button
-                                key={l.id}
-                                type="button"
-                                onClick={() => handleAssetToggle(l.id)}
-                                className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all text-left ${isChecked
-                                    ? "border-green-500 bg-green-50 dark:bg-green-900/20"
-                                    : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-                                  }`}
-                              >
-                                <div
-                                  className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${isChecked ? "border-green-500 bg-green-500" : "border-gray-300 dark:border-gray-600"}`}
-                                >
-                                  {isChecked && (
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                                  )}
-                                </div>
-                                <div>
-                                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {l.name}
-                                  </span>
-                                  <span className="block text-xs text-gray-500 dark:text-gray-400">
-                                    {l.location} • {l.crop}
-                                  </span>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Date Range */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-3">
-                        Date Range
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {DATE_RANGES.map((r) => (
-                          <button
-                            key={r.value}
-                            type="button"
-                            onClick={() => setDateRange(r.value)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border ${dateRange === r.value
-                                ? "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
-                                : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
-                              }`}
-                          >
-                            {r.label}
-                          </button>
-                        ))}
-                      </div>
-                      {dateRange === "custom" && (
-                        <div className="flex items-center gap-3 mt-3">
-                          <input
-                            type="date"
-                            className="border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm flex-1 bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 focus:outline-none"
-                            value={customRange.from}
-                            onChange={(e) =>
-                              setCustomRange((p) => ({
-                                ...p,
-                                from: e.target.value,
-                              }))
-                            }
-                          />
-                          <span className="text-gray-400 text-sm">to</span>
-                          <input
-                            type="date"
-                            className="border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm flex-1 bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 focus:outline-none"
-                            value={customRange.to}
-                            onChange={(e) =>
-                              setCustomRange((p) => ({
-                                ...p,
-                                to: e.target.value,
-                              }))
-                            }
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Generate */}
-                    <button
-                      onClick={handleGenerate}
-                      disabled={selectedAssets.length === 0 || isGenerating}
-                      className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-white bg-green-600 hover:bg-green-700 shadow-green-500/20 shadow-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      {isGenerating ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          Generating…
-                        </>
-                      ) : (
-                        <>
-                          Generate Report
-                          <ChevronRight className="w-4 h-4" />
-                        </>
-                      )}
-                    </button>
+                    )}
                   </div>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="results"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.25 }}
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+
+                  {/* Date Range */}
                   <div>
-                    <button
-                      onClick={handleBack}
-                      className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-2 transition-colors"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      Back to form
-                    </button>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {report.title}
-                    </h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      {report.dateRange} • {report.rows.length} land
-                      {report.rows.length !== 1 ? "s" : ""}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <button
-                      onClick={() => exportCSV(report)}
-                      className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-[#181818] border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors shadow-sm"
-                    >
-                      <Download className="w-4 h-4" />
-                      Export CSV
-                    </button>
-                    <ReportPDFActions
-                      report={{ ...report, assetType: "Agriculture" }}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
-                  {report.stats.map((stat, i) => (
-                    <motion.div
-                      key={stat.label}
-                      initial={{ opacity: 0, y: 16 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: i * 0.08 }}
-                      className="bg-white dark:bg-[#181818] border border-gray-200 dark:border-gray-800 rounded-2xl p-5"
-                    >
-                      <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                        {stat.label}
+                    <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                      Date Range
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {DATE_RANGES.map((r) => (
+                        <button
+                          key={r.value}
+                          type="button"
+                          onClick={() => setDateRange(r.value)}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
+                            dateRange === r.value
+                              ? "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
+                              : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
+                          }`}
+                        >
+                          {r.label}
+                        </button>
+                      ))}
+                    </div>
+                    {dateRange === "custom" && (
+                      <div className="flex items-center gap-3 mt-3">
+                        <input
+                          type="date"
+                          className="border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm flex-1 bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 focus:outline-none"
+                          value={customRange.from}
+                          onChange={(e) =>
+                            setCustomRange((p) => ({
+                              ...p,
+                              from: e.target.value,
+                            }))
+                          }
+                        />
+                        <span className="text-gray-400 text-sm">to</span>
+                        <input
+                          type="date"
+                          className="border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm flex-1 bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 focus:outline-none"
+                          value={customRange.to}
+                          onChange={(e) =>
+                            setCustomRange((p) => ({
+                              ...p,
+                              to: e.target.value,
+                            }))
+                          }
+                        />
                       </div>
-                      <div
-                        className={`text-2xl font-bold ${stat.accent || "text-gray-900 dark:text-white"}`}
-                      >
-                        {stat.value}
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-
-                <div className="bg-white dark:bg-[#101010] border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden shadow-sm">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-[#0a0a0a]">
-                          {report.columns.map((col) => (
-                            <th
-                              key={col}
-                              className="text-left px-5 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-                            >
-                              {col}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {report.rows.map((row, i) => (
-                          <tr
-                            key={i}
-                            className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors"
-                          >
-                            {report.columns.map((col) => (
-                              <td
-                                key={col}
-                                className="px-5 py-3.5 text-gray-700 dark:text-gray-300 whitespace-nowrap"
-                              >
-                                {row[col] || "—"}
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    )}
                   </div>
-                </div>
 
-                <div className="mt-6 flex justify-center">
+                  {/* Generate */}
                   <button
-                    onClick={handleBack}
-                    className="px-6 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+                    onClick={handleGenerate}
+                    disabled={selectedAssets.length === 0 || isGenerating}
+                    className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-white bg-green-600 hover:bg-green-700 shadow-green-500/20 shadow-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    Generate New Report
+                    {isGenerating ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Generating…
+                      </>
+                    ) : (
+                      <>
+                        Generate Report
+                        <ChevronRight className="w-4 h-4" />
+                      </>
+                    )}
                   </button>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </main>
-    </div>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="results"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.25 }}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div>
+                  <button
+                    onClick={handleBack}
+                    className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:white mb-2 transition-colors"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back to form
+                  </button>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {report.title}
+                  </h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    {report.dateRange} • {report.rows.length} land
+                    {report.rows.length !== 1 ? "s" : ""}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    onClick={() => exportCSV(report)}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-[#181818] border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors shadow-sm"
+                  >
+                    <Download className="w-4 h-4" />
+                    Export CSV
+                  </button>
+                  <ReportPDFActions
+                    report={{ ...report, assetType: "Agriculture" }}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
+                {report.stats.map((stat, i) => (
+                  <motion.div
+                    key={stat.label}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: i * 0.08 }}
+                    className="bg-white dark:bg-[#181818] border border-gray-200 dark:border-gray-800 rounded-2xl p-5"
+                  >
+                    <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                      {stat.label}
+                    </div>
+                    <div
+                      className={`text-2xl font-bold ${
+                        stat.accent || "text-gray-900 dark:text-white"
+                      }`}
+                    >
+                      {stat.value}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              <div className="bg-white dark:bg-[#101010] border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-[#0a0a0a]">
+                        {report.columns.map((col) => (
+                          <th
+                            key={col}
+                            className="text-left px-5 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                          >
+                            {col}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {report.rows.map((row, i) => (
+                        <tr
+                          key={i}
+                          className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors"
+                        >
+                          {report.columns.map((col) => (
+                            <td
+                              key={col}
+                              className="px-5 py-3.5 text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                            >
+                              {row[col] || "—"}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-center">
+                <button
+                  onClick={handleBack}
+                  className="px-6 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+                >
+                  Generate New Report
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </main>
   );
 }

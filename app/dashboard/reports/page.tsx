@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   useRealEstateContext,
@@ -10,7 +10,6 @@ import {
   useAgricultureContext,
   Land,
 } from "@/app/dashboard/agriculture/agriculture-context";
-import { Sidebar } from "@/components/dashboard/Sidebar";
 import { motion, AnimatePresence } from "motion/react";
 import {
   FileText,
@@ -63,9 +62,10 @@ const REPORT_TYPES_AG = [
 /* ─── Report Generator ─── */
 interface ReportResult {
   title: string;
+  reportType: "revenue" | "occupancy" | "maintenance" | "summary" | "crop";
   dateRange: string;
   assetType: string;
-  stats: { label: string; value: string; accent?: string }[];
+  stats: { label: string; value: string; subValue?: string; accent?: string }[];
   rows: Record<string, string>[];
   columns: string[];
   assets?: (Property | Land)[];
@@ -114,6 +114,7 @@ function generateReport(
 
       return {
         title: "Real Estate Revenue Report",
+        reportType: "revenue",
         dateRange: drLabel,
         assetType: "Real Estate",
         stats: [
@@ -209,6 +210,7 @@ function generateReport(
 
       return {
         title: "Occupancy Report",
+        reportType: "occupancy",
         dateRange: drLabel,
         assetType: "Real Estate",
         stats: [
@@ -284,6 +286,7 @@ function generateReport(
 
       return {
         title: "Maintenance & Status Report",
+        reportType: "maintenance",
         dateRange: drLabel,
         assetType: "Real Estate",
         stats: [
@@ -368,6 +371,7 @@ function generateReport(
 
     return {
       title: "Asset Summary Report",
+      reportType: "summary",
       dateRange: drLabel,
       assetType: "Real Estate",
       stats: [
@@ -485,6 +489,7 @@ function generateReport(
 
     return {
       title: "Agriculture Revenue Report",
+      reportType: "revenue",
       dateRange: drLabel,
       assetType: "Agriculture",
       stats: [
@@ -563,12 +568,15 @@ function generateReport(
 
     return {
       title: "Crop Analysis Report",
+      reportType: "crop",
       dateRange: drLabel,
       assetType: "Agriculture",
       stats: [
         ...Object.entries(cropMap).map(([crop, count]) => ({
           label: crop,
-          value: `${count} plot${count > 1 ? "s" : ""} | ${formatCurrency(cropProfit[crop])}`,
+          value: `${count} plot${count > 1 ? "s" : ""}`,
+          subValue: formatCurrency(cropProfit[crop]),
+          accent: "text-emerald-500",
         })),
         {
           label: "Total Crop Types",
@@ -628,6 +636,7 @@ function generateReport(
 
   return {
     title: "Agriculture Asset Summary",
+    reportType: "summary",
     dateRange: drLabel,
     assetType: "Agriculture",
     stats: [
@@ -739,10 +748,37 @@ export default function ReportsPage() {
   const [customRange, setCustomRange] = useState({ from: "", to: "" });
   const [report, setReport] = useState<ReportResult | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedReportTypeLabel, setGeneratedReportTypeLabel] = useState("");
 
   const assets = assetType === "realestate" ? properties : lands;
   const reportTypes =
     assetType === "realestate" ? REPORT_TYPES_RE : REPORT_TYPES_AG;
+
+  useEffect(() => {
+    if (!reportTypes.some((rt) => rt.value === reportType)) {
+      setReportType(reportTypes[0].value);
+    }
+  }, [reportTypes, reportType]);
+
+  const activeReportTypeLabel =
+    reportTypes.find((rt) => rt.value === reportType)?.label || "Report";
+
+  const accentStyles =
+    assetType === "realestate"
+      ? {
+          optionActive:
+            "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300",
+          link: "text-blue-600 dark:text-blue-400",
+          itemActive: "border-blue-500 bg-blue-50 dark:bg-blue-900/20",
+          checkActive: "border-blue-500 bg-blue-500",
+        }
+      : {
+          optionActive:
+            "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300",
+          link: "text-green-600 dark:text-green-400",
+          itemActive: "border-green-500 bg-green-50 dark:bg-green-900/20",
+          checkActive: "border-green-500 bg-green-500",
+        };
 
   const handleAssetToggle = (id: string) => {
     setSelectedAssets((prev) =>
@@ -760,6 +796,7 @@ export default function ReportsPage() {
 
   const handleGenerate = () => {
     setIsGenerating(true);
+    setGeneratedReportTypeLabel(activeReportTypeLabel);
     setTimeout(() => {
       const result = generateReport(
         assetType,
@@ -779,35 +816,9 @@ export default function ReportsPage() {
     setReport(null);
   };
 
-  const accentColor = assetType === "realestate" ? "blue" : "green";
-
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-black">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto">
-        {/* Mobile Menu Button */}
-        <button
-          onClick={() => {
-            window.dispatchEvent(new CustomEvent("toggleMobileSidebar"));
-          }}
-          className="lg:hidden fixed top-4 left-4 z-30 p-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm hover:bg-gray-100 dark:hover:bg-gray-900"
-        >
-          <svg
-            className="w-5 h-5 text-gray-900 dark:text-white"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 6h16M4 12h16M4 18h16"
-            />
-          </svg>
-        </button>
-
-        <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8">
+    <main className="flex-1 overflow-y-auto">
+      <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8">
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-2">
@@ -886,7 +897,7 @@ export default function ReportsPage() {
                               onClick={() => setReportType(rt.value)}
                               className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
                                 isActive
-                                  ? `border-${accentColor}-500 bg-${accentColor}-50 dark:bg-${accentColor}-900/20 text-${accentColor}-700 dark:text-${accentColor}-300`
+                                  ? accentStyles.optionActive
                                   : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
                               }`}
                             >
@@ -911,7 +922,7 @@ export default function ReportsPage() {
                           <button
                             type="button"
                             onClick={handleSelectAll}
-                            className={`text-xs font-medium text-${accentColor}-600 dark:text-${accentColor}-400 hover:underline`}
+                            className={`text-xs font-medium hover:underline ${accentStyles.link}`}
                           >
                             {selectedAssets.length === assets.length
                               ? "Deselect All"
@@ -940,14 +951,14 @@ export default function ReportsPage() {
                                 onClick={() => handleAssetToggle(asset.id)}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all text-left ${
                                   isChecked
-                                    ? `border-${accentColor}-500 bg-${accentColor}-50 dark:bg-${accentColor}-900/20`
+                                    ? accentStyles.itemActive
                                     : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
                                 }`}
                               >
                                 <div
                                   className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${
                                     isChecked
-                                      ? `border-${accentColor}-500 bg-${accentColor}-500`
+                                      ? accentStyles.checkActive
                                       : "border-gray-300 dark:border-gray-600"
                                   }`}
                                 >
@@ -983,7 +994,7 @@ export default function ReportsPage() {
                             onClick={() => setDateRange(range.value)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
                               dateRange === range.value
-                                ? `border-${accentColor}-500 bg-${accentColor}-50 dark:bg-${accentColor}-900/20 text-${accentColor}-700 dark:text-${accentColor}-300`
+                                ? accentStyles.optionActive
                                 : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
                             }`}
                           >
@@ -1037,7 +1048,7 @@ export default function ReportsPage() {
                         </>
                       ) : (
                         <>
-                          Generate Report
+                          Generate {activeReportTypeLabel}
                           <ChevronRight className="w-4 h-4" />
                         </>
                       )}
@@ -1072,6 +1083,9 @@ export default function ReportsPage() {
                       {report.rows.length} asset
                       {report.rows.length !== 1 ? "s" : ""}
                     </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Report Type: {generatedReportTypeLabel || activeReportTypeLabel}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <button
@@ -1099,10 +1113,23 @@ export default function ReportsPage() {
                         {stat.label}
                       </div>
                       <div
-                        className={`text-2xl font-bold ${stat.accent || "text-gray-900 dark:text-white"}`}
+                        className={`text-2xl font-bold ${
+                          stat.subValue
+                            ? "text-gray-900 dark:text-white"
+                            : stat.accent || "text-gray-900 dark:text-white"
+                        }`}
                       >
                         {stat.value}
                       </div>
+                      {stat.subValue && (
+                        <div
+                          className={`text-[15px] font-semibold mt-1 ${
+                            stat.accent || "text-gray-700 dark:text-gray-300"
+                          }`}
+                        >
+                          {stat.subValue}
+                        </div>
+                      )}
                     </motion.div>
                   ))}
                 </div>
@@ -1170,8 +1197,7 @@ export default function ReportsPage() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }

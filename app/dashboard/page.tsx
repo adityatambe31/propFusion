@@ -3,7 +3,6 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { authClient } from "@/lib/auth/auth-client";
-import { Sidebar } from "@/components/dashboard/Sidebar";
 import {
   useRealEstateContext,
   Property,
@@ -23,10 +22,17 @@ import {
 } from "lucide-react";
 
 // Dynamically import charts to avoid SSR issues
-const RevenueByAssetChart = dynamic(
+const RealEstateRevenueChart = dynamic(
   () =>
     import("@/components/dashboard/PortfolioCharts").then(
-      (mod) => mod.RevenueByAssetChart,
+      (mod) => mod.RealEstateRevenueChart,
+    ),
+  { ssr: false, loading: () => <ChartSkeleton /> },
+);
+const AgricultureRevenueChart = dynamic(
+  () =>
+    import("@/components/dashboard/PortfolioCharts").then(
+      (mod) => mod.AgricultureRevenueChart,
     ),
   { ssr: false, loading: () => <ChartSkeleton /> },
 );
@@ -41,6 +47,13 @@ const AssetDistributionChart = dynamic(
   () =>
     import("@/components/dashboard/PortfolioCharts").then(
       (mod) => mod.AssetDistributionChart,
+    ),
+  { ssr: false, loading: () => <ChartSkeleton /> },
+);
+const RevenueVsExpensesChart = dynamic(
+  () =>
+    import("@/components/dashboard/PortfolioCharts").then(
+      (mod) => mod.RevenueVsExpensesChart,
     ),
   { ssr: false, loading: () => <ChartSkeleton /> },
 );
@@ -59,6 +72,18 @@ const formatCurrency = (value: number): string => {
     maximumFractionDigits: 0,
   }).format(value);
 };
+
+const calcExpenseTotal = (expenses?: object): number => {
+  if (!expenses) return 0;
+  return Object.values(expenses as Record<string, unknown>).reduce<number>(
+    (sum, val) => {
+      if (typeof val !== "string") return sum;
+      return sum + parseCurrency(val);
+    },
+    0,
+  );
+};
+
 export default function Dashboard() {
   const { data: session, isPending } = authClient.useSession();
 
@@ -83,6 +108,12 @@ export default function Dashboard() {
   const totalMonthlyRevenue =
     properties.reduce((sum, p) => sum + parseCurrency(p.price), 0) +
     lands.reduce((sum, l) => sum + parseCurrency(l.profit) / 12, 0);
+
+  const totalMonthlyExpenses =
+    properties.reduce((sum, p) => sum + calcExpenseTotal(p.expenses), 0) +
+    lands.reduce((sum, l) => sum + calcExpenseTotal(l.expenses) / 12, 0);
+
+  const netMonthlyCashflow = totalMonthlyRevenue - totalMonthlyExpenses;
 
   const totalPropertyValue =
     properties.reduce(
@@ -120,31 +151,7 @@ export default function Dashboard() {
   const hasAssets = properties.length > 0 || lands.length > 0;
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-black">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto px-4 sm:px-8 py-8 max-w-5xl mx-auto">
-        {/* Mobile Menu Button */}
-        <button
-          onClick={() => {
-            const event = new CustomEvent("toggleMobileSidebar");
-            window.dispatchEvent(event);
-          }}
-          className="lg:hidden mb-6 p-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm hover:bg-gray-100 dark:hover:bg-gray-900"
-        >
-          <svg
-            className="w-5 h-5 text-gray-900 dark:text-white"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 6h16M4 12h16M4 18h16"
-            />
-          </svg>
-        </button>
+      <main className="flex-1 px-4 sm:px-8 py-8 max-w-7xl mx-auto w-full">
 
         {/* Header Section */}
         <div className="mb-10">
@@ -247,14 +254,49 @@ export default function Dashboard() {
               </div>
             </div>
 
+            <div className="bg-white dark:bg-[#181818] rounded-xl p-4 border border-gray-100 dark:border-gray-800 shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Net Monthly Cashflow</p>
+                <p
+                  className={`text-2xl font-bold ${
+                    netMonthlyCashflow >= 0
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-red-600 dark:text-red-400"
+                  }`}
+                >
+                  {formatCurrency(netMonthlyCashflow)}
+                </p>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Revenue {formatCurrency(totalMonthlyRevenue)} • Expenses {formatCurrency(totalMonthlyExpenses)}
+              </p>
+            </div>
+
             {/* Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Revenue by Asset */}
-              <div className="bg-white dark:bg-[#181818] rounded-xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Revenue by Asset
-                </h3>
-                <RevenueByAssetChart properties={properties} lands={lands} />
+            <div className="space-y-6">
+              {/* Real Estate and Agriculture Revenue Charts */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Real Estate Revenue */}
+                {properties.length > 0 && (
+                  <div className="bg-white dark:bg-[#181818] rounded-xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+                      Real Estate Revenue
+                    </h3>
+                    <RealEstateRevenueChart properties={properties} />
+                  </div>
+                )}
+
+                {/* Agriculture Revenue */}
+                {lands.length > 0 && (
+                  <div className="bg-white dark:bg-[#181818] rounded-xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-green-500"></span>
+                      Agriculture Revenue
+                    </h3>
+                    <AgricultureRevenueChart lands={lands} />
+                  </div>
+                )}
               </div>
 
               {/* Asset Distribution */}
@@ -274,6 +316,13 @@ export default function Dashboard() {
                   <OccupancyChart properties={properties} />
                 </div>
               )}
+            </div>
+
+            <div className="bg-white dark:bg-[#181818] rounded-xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Monthly Revenue vs Expenses
+              </h3>
+              <RevenueVsExpensesChart properties={properties} lands={lands} />
             </div>
 
             {/* Asset Cards */}
@@ -374,6 +423,5 @@ export default function Dashboard() {
           </div>
         )}
       </main>
-    </div>
   );
 }

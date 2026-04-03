@@ -74,56 +74,140 @@ const parseCurrency = (value?: string): number => {
   return parseFloat(cleaned) || 0;
 };
 
-export function RevenueByAssetChart({
+export function RealEstateRevenueChart({
   properties,
-  lands,
-}: PortfolioChartsProps) {
-  const data = [
-    ...properties.map((p) => ({
+}: Omit<PortfolioChartsProps, "lands">) {
+  const data = properties
+    .map((p) => ({
       name: p.name || "Property",
       revenue: parseCurrency(p.price),
-      type: "Real Estate",
-    })),
-    ...lands.map((l) => ({
-      name: l.name || "Land",
-      revenue: parseCurrency(l.profit),
-      type: "Agriculture",
-    })),
-  ].slice(0, 8);
+    }))
+    .slice(0, 8);
 
   if (data.length === 0) {
     return (
       <div className="h-[300px] flex items-center justify-center text-gray-500">
-        No data available
+        No properties available
       </div>
     );
   }
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+    <ResponsiveContainer width="100%" height={data.length * 40 + 60}>
+      <BarChart
+        data={data}
+        layout="vertical"
+        margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
+      >
+        <CartesianGrid
+          strokeDasharray="3 3"
+          stroke="#374151"
+          opacity={0.2}
+          horizontal={true}
+          vertical={false}
+        />
         <XAxis
-          dataKey="name"
-          tick={{ fill: "#9ca3af", fontSize: 12 }}
-          angle={-45}
-          textAnchor="end"
-          height={80}
+          type="number"
+          tick={{ fill: "#9ca3af", fontSize: 11 }}
+          tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+          axisLine={false}
+          tickLine={false}
         />
         <YAxis
-          tick={{ fill: "#9ca3af", fontSize: 12 }}
-          tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+          dataKey="name"
+          type="category"
+          tick={{ fill: "#9ca3af", fontSize: 11 }}
+          axisLine={false}
+          tickLine={false}
+          width={90}
         />
         <Tooltip
+          cursor={{ fill: "transparent" }}
           contentStyle={{
-            backgroundColor: "#1f2937",
-            border: "1px solid #374151",
-            borderRadius: "8px",
+            backgroundColor: "#111111",
+            border: "1px solid #333333",
+            borderRadius: "12px",
+            fontSize: "12px",
             color: "#fff",
+            boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.5)",
           }}
-          formatter={(value: number) => [`$${value.toLocaleString()}`, "Revenue"]}
+          itemStyle={{ color: "#fff" }}
+          formatter={(value: number | string | undefined) => [
+            `$${Number(value || 0).toLocaleString()}`,
+            "Monthly Revenue",
+          ]}
         />
-        <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="revenue" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+export function AgricultureRevenueChart({
+  lands,
+}: Omit<PortfolioChartsProps, "properties">) {
+  const data = lands
+    .map((l) => ({
+      name: l.name || "Land",
+      // Land profit is typically annual; normalize to monthly for fair comparison.
+      revenue: parseCurrency(l.profit) / 12,
+    }))
+    .slice(0, 8);
+
+  if (data.length === 0) {
+    return (
+      <div className="h-[300px] flex items-center justify-center text-gray-500">
+        No lands available
+      </div>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={data.length * 40 + 60}>
+      <BarChart
+        data={data}
+        layout="vertical"
+        margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
+      >
+        <CartesianGrid
+          strokeDasharray="3 3"
+          stroke="#374151"
+          opacity={0.2}
+          horizontal={true}
+          vertical={false}
+        />
+        <XAxis
+          type="number"
+          tick={{ fill: "#9ca3af", fontSize: 11 }}
+          tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+          axisLine={false}
+          tickLine={false}
+        />
+        <YAxis
+          dataKey="name"
+          type="category"
+          tick={{ fill: "#9ca3af", fontSize: 11 }}
+          axisLine={false}
+          tickLine={false}
+          width={90}
+        />
+        <Tooltip
+          cursor={{ fill: "transparent" }}
+          contentStyle={{
+            backgroundColor: "#111111",
+            border: "1px solid #333333",
+            borderRadius: "12px",
+            fontSize: "12px",
+            color: "#fff",
+            boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.5)",
+          }}
+          itemStyle={{ color: "#fff" }}
+          formatter={(value: number | string | undefined) => [
+            `$${Number(value || 0).toLocaleString()}`,
+            "Monthly Revenue",
+          ]}
+        />
+        <Bar dataKey="revenue" fill="#10b981" radius={[0, 4, 4, 0]} barSize={20} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -166,38 +250,52 @@ export function AssetDistributionChart({
   }
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
-      <PieChart>
-        <Pie
-          data={data}
-          cx="50%"
-          cy="50%"
-          innerRadius={60}
-          outerRadius={100}
-          paddingAngle={2}
-          dataKey="value"
-          label={({ name, percent }) =>
-            `${name} ${(percent * 100).toFixed(0)}%`
-          }
-          labelLine={true}
-        >
-          {data.map((_, index) => (
-            <Cell
-              key={`cell-${index}`}
-              fill={COLORS[index % COLORS.length]}
+    <div className="flex flex-col items-center">
+      <ResponsiveContainer width="100%" height={260}>
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            innerRadius={65}
+            outerRadius={90}
+            paddingAngle={5}
+            dataKey="value"
+            stroke="none"
+          >
+            {data.map((_, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={COLORS[index % COLORS.length]}
+                className="hover:opacity-80 transition-opacity"
+              />
+            ))}
+          </Pie>
+          <Tooltip
+            contentStyle={{
+              backgroundColor: "#111111",
+              border: "1px solid #333333",
+              borderRadius: "12px",
+              color: "#fff",
+            }}
+            itemStyle={{ color: "#fff" }}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-2 px-4">
+        {data.map((entry, index) => (
+          <div key={entry.name} className="flex items-center gap-1.5">
+            <div
+              className="w-2.5 h-2.5 rounded-full"
+              style={{ backgroundColor: COLORS[index % COLORS.length] }}
             />
-          ))}
-        </Pie>
-        <Tooltip
-          contentStyle={{
-            backgroundColor: "#1f2937",
-            border: "1px solid #374151",
-            borderRadius: "8px",
-            color: "#fff",
-          }}
-        />
-      </PieChart>
-    </ResponsiveContainer>
+            <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+              {entry.name}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -223,33 +321,52 @@ export function OccupancyChart({ properties }: { properties: Property[] }) {
   }
 
   return (
-    <ResponsiveContainer width="100%" height={250}>
-      <PieChart>
-        <Pie
-          data={data}
-          cx="50%"
-          cy="50%"
-          innerRadius={50}
-          outerRadius={80}
-          paddingAngle={2}
-          dataKey="value"
-          label={({ name, value }) => `${name}: ${value}`}
-        >
-          {data.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={entry.fill} />
-          ))}
-        </Pie>
-        <Tooltip
-          contentStyle={{
-            backgroundColor: "#1f2937",
-            border: "1px solid #374151",
-            borderRadius: "8px",
-            color: "#fff",
-          }}
-        />
-        <Legend />
-      </PieChart>
-    </ResponsiveContainer>
+    <div className="flex flex-col items-center">
+      <ResponsiveContainer width="100%" height={220}>
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            innerRadius={55}
+            outerRadius={75}
+            paddingAngle={4}
+            dataKey="value"
+            stroke="none"
+          >
+            {data.map((entry, index) => (
+              <Cell 
+                key={`cell-${index}`} 
+                fill={entry.fill}
+                className="hover:opacity-80 transition-opacity" 
+              />
+            ))}
+          </Pie>
+          <Tooltip
+            contentStyle={{
+              backgroundColor: "#111111",
+              border: "1px solid #333333",
+              borderRadius: "12px",
+              color: "#fff",
+            }}
+            itemStyle={{ color: "#fff" }}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="flex justify-center gap-4 mt-2">
+        {data.map((entry) => (
+          <div key={entry.name} className="flex items-center gap-1.5">
+            <div
+              className="w-2.5 h-2.5 rounded-full"
+              style={{ backgroundColor: entry.fill }}
+            />
+            <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+              {entry.name}: {entry.value}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -275,8 +392,9 @@ export function RevenueVsExpensesChart({
 
   const landData = lands.map((l) => ({
     name: l.name || "Land",
-    revenue: parseCurrency(l.profit),
-    expenses: calcExpenses(l.expenses),
+    // Land values are annual in source data; convert to monthly for comparability.
+    revenue: parseCurrency(l.profit) / 12,
+    expenses: calcExpenses(l.expenses) / 12,
   }));
 
   const data = [...propertyData, ...landData].slice(0, 6);
@@ -290,36 +408,67 @@ export function RevenueVsExpensesChart({
   }
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+    <ResponsiveContainer width="100%" height={data.length * 50 + 60}>
+      <BarChart
+        data={data}
+        layout="vertical"
+        margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
+      >
+        <CartesianGrid
+          strokeDasharray="3 3"
+          stroke="#374151"
+          opacity={0.2}
+          horizontal={true}
+          vertical={false}
+        />
         <XAxis
-          dataKey="name"
-          tick={{ fill: "#9ca3af", fontSize: 12 }}
-          angle={-45}
-          textAnchor="end"
-          height={80}
+          type="number"
+          tick={{ fill: "#9ca3af", fontSize: 11 }}
+          tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+          axisLine={false}
+          tickLine={false}
         />
         <YAxis
-          tick={{ fill: "#9ca3af", fontSize: 12 }}
-          tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+          dataKey="name"
+          type="category"
+          tick={{ fill: "#9ca3af", fontSize: 11 }}
+          axisLine={false}
+          tickLine={false}
+          width={90}
         />
         <Tooltip
+          cursor={{ fill: "transparent" }}
           contentStyle={{
-            backgroundColor: "#1f2937",
-            border: "1px solid #374151",
-            borderRadius: "8px",
+            backgroundColor: "#111111",
+            border: "1px solid #333333",
+            borderRadius: "12px",
+            fontSize: "12px",
             color: "#fff",
           }}
-          formatter={(value: number) => `$${value.toLocaleString()}`}
+          itemStyle={{ color: "#fff" }}
+          formatter={(value: number | string | undefined) =>
+            `$${Number(value || 0).toLocaleString()}`
+          }
         />
-        <Legend />
-        <Bar dataKey="revenue" fill="#10b981" name="Revenue" radius={[4, 4, 0, 0]} />
+        <Legend 
+          verticalAlign="top" 
+          height={36} 
+          iconType="circle"
+          wrapperStyle={{ fontSize: '11px', paddingTop: '0px' }}
+        />
+        <Bar
+          dataKey="revenue"
+          fill="#10b981"
+          name="Revenue"
+          radius={[0, 4, 4, 0]}
+          barSize={15}
+        />
         <Bar
           dataKey="expenses"
           fill="#ef4444"
           name="Expenses"
-          radius={[4, 4, 0, 0]}
+          radius={[0, 4, 4, 0]}
+          barSize={15}
         />
       </BarChart>
     </ResponsiveContainer>
@@ -353,7 +502,11 @@ export function PortfolioValueTrend() {
             borderRadius: "8px",
             color: "#fff",
           }}
-          formatter={(value: number) => [`$${value.toLocaleString()}`, "Portfolio Value"]}
+          itemStyle={{ color: "#fff" }}
+          formatter={(value: number | string | undefined) => [
+            `$${Number(value || 0).toLocaleString()}`,
+            "Portfolio Value",
+          ]}
         />
         <Line
           type="monotone"

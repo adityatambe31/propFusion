@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { Home as HomeIcon, Sprout, TrendingUp, BarChart3, Shield, Zap, ArrowRight, DollarSign } from "lucide-react";
+import { useSession } from "@/lib/auth/auth-client";
 
 const features = [
   {
@@ -56,6 +59,15 @@ const stats = [
 ];
 
 export default function Home() {
+  const { data: session } = useSession();
+  const isAuthed = Boolean(session?.user);
+  const signInHref = isAuthed
+    ? "/dashboard"
+    : "/auth/sign-in?callbackURL=/auth/post-signin-redirect";
+  const getStartedHref = isAuthed
+    ? "/dashboard"
+    : "/auth/sign-up?callbackURL=/auth/post-signin-redirect";
+
   return (
     <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white overflow-x-hidden">
 
@@ -69,14 +81,16 @@ export default function Home() {
             <span className="text-lg font-bold tracking-tight">PropFusion</span>
           </div>
           <div className="flex items-center gap-3">
+            {!isAuthed && (
+              <Link
+                href={signInHref}
+                className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+              >
+                Sign In
+              </Link>
+            )}
             <Link
-              href="/auth/sign-in"
-              className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/auth/sign-up"
+              href={getStartedHref}
               className="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-black text-sm font-medium rounded-xl hover:bg-gray-700 dark:hover:bg-gray-200 transition-colors"
             >
               Get Started
@@ -121,14 +135,14 @@ export default function Home() {
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mb-16">
             <Link
-              href="/auth/sign-up"
+              href={getStartedHref}
               className="group inline-flex items-center gap-2 px-8 py-4 bg-gray-900 dark:bg-white text-white dark:text-black font-semibold text-base rounded-2xl hover:bg-gray-700 dark:hover:bg-gray-100 transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.99]"
             >
               Start for free
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link
-              href="/auth/sign-in"
+              href={signInHref}
               className="inline-flex items-center gap-2 px-8 py-4 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 font-semibold text-base rounded-2xl hover:border-gray-400 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-950 transition-all"
             >
               Sign in to your account
@@ -204,14 +218,14 @@ export default function Home() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
-                  href="/auth/sign-up"
+                  href={getStartedHref}
                   className="group inline-flex items-center gap-2 px-8 py-4 bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-semibold text-base rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.99]"
                 >
                   Create free account
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <Link
-                  href="/auth/sign-in"
+                  href={signInHref}
                   className="inline-flex items-center gap-2 px-8 py-4 border border-white/20 dark:border-gray-900/20 text-white dark:text-gray-900 font-semibold text-base rounded-2xl hover:bg-white/10 dark:hover:bg-gray-900/10 transition-all"
                 >
                   Sign in
@@ -235,10 +249,10 @@ export default function Home() {
             © {new Date().getFullYear()} PropFusion. Smart investing, simplified.
           </p>
           <div className="flex gap-6">
-            <Link href="/auth/sign-in" className="text-sm text-gray-400 dark:text-gray-600 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+            <Link href={signInHref} className="text-sm text-gray-400 dark:text-gray-600 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
               Sign In
             </Link>
-            <Link href="/auth/sign-up" className="text-sm text-gray-400 dark:text-gray-600 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+            <Link href={getStartedHref} className="text-sm text-gray-400 dark:text-gray-600 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
               Sign Up
             </Link>
           </div>

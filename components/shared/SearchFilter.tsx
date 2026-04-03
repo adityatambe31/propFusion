@@ -63,13 +63,13 @@ export function SearchFilter({
       <div className="flex flex-col sm:flex-row gap-3">
         {/* Search Input */}
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-300" />
           <input
             type="text"
             placeholder={searchPlaceholder}
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="w-full pl-10 pr-10 py-2 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900"
+            className="w-full pl-10 pr-10 py-2 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900"
           />
           {search && (
             <button
@@ -87,9 +87,9 @@ export function SearchFilter({
             <Button
               variant="outline"
               onClick={() => setShowFilters(!showFilters)}
-              className="relative"
+              className="relative dark:text-white"
             >
-              <SlidersHorizontal className="h-4 w-4 mr-2" />
+              <SlidersHorizontal className="h-4 w-4 mr-2 dark:text-white" />
               Filters
               {activeFilterCount > 0 && (
                 <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center">
@@ -101,7 +101,7 @@ export function SearchFilter({
 
           {sortOptions.length > 0 && (
             <Select value={activeSort} onValueChange={onSortChange}>
-              <SelectTrigger className="w-[160px]">
+              <SelectTrigger className="w-[160px] dark:text-white">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
@@ -121,14 +121,14 @@ export function SearchFilter({
         <div className="flex flex-wrap gap-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
           {filters.map((filter) => (
             <div key={filter.key} className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+              <label className="text-xs font-medium text-gray-500 dark:text-gray-300">
                 {filter.label}
               </label>
               <Select
                 value={activeFilters[filter.key] || "all"}
                 onValueChange={(value) => onFilterChange?.(filter.key, value)}
               >
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-[140px] dark:text-white">
                   <SelectValue placeholder={`All ${filter.label}`} />
                 </SelectTrigger>
                 <SelectContent>
@@ -149,7 +149,7 @@ export function SearchFilter({
               onClick={() => {
                 filters.forEach((f) => onFilterChange?.(f.key, "all"));
               }}
-              className="text-gray-500"
+              className="text-gray-500 dark:text-gray-400 font-medium"
             >
               Clear all
             </Button>

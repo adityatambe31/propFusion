@@ -22,6 +22,8 @@ import {
   markAsRead,
   markAllAsRead,
   fireBrowserNotifications,
+  NOTIFICATION_SETTINGS_UPDATED_EVENT,
+  SETTINGS_KEY,
 } from "@/lib/helpers/notification-helpers";
 import {
   useRealEstateContext,
@@ -115,7 +117,7 @@ function NotificationItem({
 
 /* ─── Main Component ───────────────────────────────────────────── */
 
-export function NotificationBell() {
+export function NotificationBell({ align = "right" }: { align?: "left" | "right" }) {
   const realEstateContext = useRealEstateContext();
   const agricultureContext = useAgricultureContext();
   const properties = useMemo(() => realEstateContext?.properties ?? [], [realEstateContext?.properties]);
@@ -129,6 +131,8 @@ export function NotificationBell() {
   });
   // tick increments every 5 min to force re-derivation from localStorage settings
   const [tick, setTick] = useState(0);
+  // settingsVersion increments when notification settings change in this or another tab
+  const [settingsVersion, setSettingsVersion] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Poll every 5 minutes; no setState in the effect body itself
@@ -137,16 +141,40 @@ export function NotificationBell() {
     return () => clearInterval(interval);
   }, []);
 
+  // React immediately to settings updates in current tab + sync across tabs.
+  useEffect(() => {
+    const refresh = () => setSettingsVersion((v) => v + 1);
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === SETTINGS_KEY) refresh();
+    };
+
+    window.addEventListener(
+      NOTIFICATION_SETTINGS_UPDATED_EVENT,
+      refresh as EventListener
+    );
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener(
+        NOTIFICATION_SETTINGS_UPDATED_EVENT,
+        refresh as EventListener
+      );
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
+
   // Derive notifications from asset data (re-runs when deps change)
   const notifications = useMemo(() => {
     // tick is referenced so this memo re-runs on polling intervals
     void tick;
+    // settingsVersion is referenced so this memo re-runs immediately on settings changes
+    void settingsVersion;
     const settings = getNotificationSettings();
     return deriveNotifications(properties, lands, settings).map((n) => ({
       ...n,
       read: readIds.has(n.id),
     }));
-  }, [properties, lands, readIds, tick]);
+  }, [properties, lands, readIds, tick, settingsVersion]);
 
   // Fire browser push notifications as a side-effect of notifications changing
   useEffect(() => {
@@ -204,7 +232,9 @@ export function NotificationBell() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.97 }}
             transition={{ duration: 0.18 }}
-            className="absolute right-0 top-full mt-2 w-85 sm:w-95 bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl z-50 overflow-hidden"
+            className={`absolute top-full mt-2 w-[calc(100vw-2rem)] sm:w-95 max-w-[380px] bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl z-[100] overflow-hidden ${
+              align === "left" ? "left-0" : "right-0"
+            }`}
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">

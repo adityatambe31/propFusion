@@ -1,11 +1,10 @@
 "use client";
 
-import { Sidebar } from "@/components/dashboard/Sidebar";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuthLoading } from "@daveyplate/better-auth-ui";
 import { authClient } from "@/lib/auth/auth-client";
 import { getUserAvatarColor, getUserInitials } from "@/lib/helpers/avatar-utils";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 
 function ProfileSkeleton() {
@@ -235,7 +234,6 @@ function CombinedProfileCard() {
   );
 }
 
-import { useMemo } from "react";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -259,9 +257,7 @@ export default function ProfilePage() {
   }, [searchParams]);
 
   return (
-    <div className="flex h-screen bg-white dark:bg-black overflow-hidden">
-      <Sidebar />
-      <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
+    <main className="flex-1 p-4 sm:p-6 md:p-8">
         <div className="max-w-4xl mx-auto">
           <button
             onClick={() => router.push(backUrl)}
@@ -279,7 +275,6 @@ export default function ProfilePage() {
 
           <CombinedProfileCard />
         </div>
-      </main>
-    </div>
+    </main>
   );
 }

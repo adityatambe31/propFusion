@@ -25,6 +25,8 @@ export interface AppNotification {
 const STORAGE_KEY = "propfusion_notifications";
 const READ_KEY = "propfusion_notifications_read";
 const LAST_BROWSER_NOTIF_KEY = "propfusion_last_browser_notif_date";
+export const NOTIFICATION_SETTINGS_UPDATED_EVENT =
+  "propfusion:notification-settings-updated";
 
 /* ─── Persist helpers ──────────────────────────────────────────── */
 
@@ -71,7 +73,7 @@ const DEFAULT_SETTINGS: NotificationSettings = {
   daysBeforeLeaseExpiry: 30,
 };
 
-const SETTINGS_KEY = "propfusion_notif_settings";
+export const SETTINGS_KEY = "propfusion_notif_settings";
 
 export function getNotificationSettings(): NotificationSettings {
   try {
@@ -84,6 +86,16 @@ export function getNotificationSettings(): NotificationSettings {
 
 export function saveNotificationSettings(settings: NotificationSettings) {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+
+  // Local storage writes in the same tab do not trigger the "storage" event.
+  // Emit a custom event so in-app listeners can react immediately.
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent(NOTIFICATION_SETTINGS_UPDATED_EVENT, {
+        detail: settings,
+      })
+    );
+  }
 }
 
 /* ─── Alert generation ─────────────────────────────────────────── */

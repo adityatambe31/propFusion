@@ -1,6 +1,5 @@
 "use client";
 
-import { Sidebar } from "@/components/dashboard/Sidebar";
 import {
   ChangeEmailCard,
   ChangePasswordCard,
@@ -351,9 +350,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="flex h-screen bg-white dark:bg-black overflow-hidden">
-      <Sidebar />
-      <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
+    <main className="flex-1 p-4 sm:p-6 md:p-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex gap-4 mb-6">
             <button
@@ -381,28 +378,6 @@ export default function SettingsPage() {
               <span className="text-lg">←</span> Back to Dashboard
             </button>
           </div>
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => {
-              const event = new CustomEvent("toggleMobileSidebar");
-              window.dispatchEvent(event);
-            }}
-            className="lg:hidden fixed top-4 left-4 z-30 p-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg"
-          >
-            <svg
-              className="w-6 h-6 text-gray-900 dark:text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
-          </button>
 
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6 sm:mb-8 ml-12 lg:ml-0">
             Settings
@@ -498,7 +473,6 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+    </main>
   );
 }

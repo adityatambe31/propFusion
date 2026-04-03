@@ -1,7 +1,6 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Sidebar } from "@/components/dashboard/Sidebar";
 import {
   Select,
   SelectTrigger,
@@ -30,6 +29,20 @@ import { Pencil, Trash2, Search } from "lucide-react";
 const MapComponent = dynamic(() => import("@/components/dashboard/MapComponent"), {
   ssr: false,
 });
+
+import {
+  TrendingUp,
+  Users,
+  Home,
+  DollarSign,
+  AlertCircle,
+  LayoutGrid,
+  Map as MapIcon,
+  PlusCircle,
+  MapPin,
+  Maximize2
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function RealEstateDashboard() {
   const router = useRouter();
@@ -384,23 +397,84 @@ export default function RealEstateDashboard() {
   };
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar type="real-estate" />
-      <main className="flex-1 p-8">
+    <main className="flex-1 p-4 sm:p-8 max-w-7xl mx-auto w-full">
         <h1 className="text-3xl font-bold mb-6 dark:text-white">
           Real Estate Dashboard
         </h1>
+
+        {/* Summary Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white dark:bg-[#181818] p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                <Home className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-medium text-gray-400">Updated today</span>
+            </div>
+            <p className="text-sm font-medium text-gray-500 mb-1">Total Properties</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {properties.length}
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-[#181818] p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center text-green-600 dark:text-green-400">
+                <Users className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-medium text-green-500">Active</span>
+            </div>
+            <p className="text-sm font-medium text-gray-500 mb-1">Active Tenants</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {properties.reduce((acc, p) => acc + (p.tenants?.length || 0), 0)}
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-[#181818] p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                <DollarSign className="w-5 h-5" />
+              </div>
+              <div className="flex items-center gap-1 text-xs font-medium text-amber-500">
+                <TrendingUp className="w-3 h-3" /> +12%
+              </div>
+            </div>
+            <p className="text-sm font-medium text-gray-500 mb-1">Monthly Revenue</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              ${properties.reduce((acc, p) => acc + parseFloat(p.price?.replace(/[^0-9.]/g, "") || "0"), 0).toLocaleString()}
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-[#181818] p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-600 dark:text-red-400">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-medium text-red-500">High Priority</span>
+            </div>
+            <p className="text-sm font-medium text-gray-500 mb-1">Critical Alerts</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {properties.filter(p => p.status === "Vacant").length +
+                properties.reduce((acc, p) => acc + (p.tenants?.filter(t => t.paymentStatus === "overdue" || t.paymentStatus === "late").length || 0), 0)}
+            </p>
+          </div>
+        </div>
+
         <div className="flex flex-wrap gap-4 mb-6">
           <Button
             onClick={() => setShowMap(false)}
             variant={!showMap ? "default" : "outline"}
+            className={cn("rounded-xl", !showMap ? "" : "dark:text-white")}
           >
+            <LayoutGrid className={cn("w-4 h-4 mr-2", !showMap ? "" : "dark:text-white")} />
             Properties
           </Button>
           <Button
             onClick={() => setShowMap(true)}
             variant={showMap ? "default" : "outline"}
+            className={cn("rounded-xl", showMap ? "" : "dark:text-white")}
           >
+            <MapIcon className={cn("w-4 h-4 mr-2", showMap ? "" : "dark:text-white")} />
             Map View
           </Button>
           <Button
@@ -409,8 +483,10 @@ export default function RealEstateDashboard() {
               setShowAddModal(true);
             }}
             variant="outline"
+            className="rounded-xl dark:text-white"
           >
-            + Add Property
+            <PlusCircle className="w-4 h-4 mr-2" />
+            Add Property
           </Button>
         </div>
 
@@ -480,121 +556,125 @@ export default function RealEstateDashboard() {
                 )}
               </div>
             ) : (
-              filteredProperties.map((property) => (
+              filteredProperties.map((property, idx) => (
                 <div
                   key={property.id}
-                  className="bg-white dark:bg-[#181818] rounded-xl shadow-lg p-4 sm:p-5 md:p-6 cursor-pointer hover:shadow-2xl transition-all duration-200 relative border border-gray-100 dark:border-gray-800"
+                  className="bg-white dark:bg-[#181818] rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer group relative border border-gray-100 dark:border-gray-800 flex flex-col overflow-hidden"
                   onClick={(e) => {
                     if ((e.target as HTMLElement).closest("button")) return;
                     handlePropertyClick(property.id);
                   }}
                 >
-                  <button
-                    className="absolute top-3 right-3 text-red-500 hover:text-red-700 bg-white dark:bg-gray-900 rounded-full w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center shadow-md hover:scale-110 transition z-10"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteProperty(property.id);
-                    }}
-                    title="Delete Property"
-                  >
-                    <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                  </button>
-                  <button
-                    className="absolute top-3 right-10 sm:right-12 text-blue-500 hover:text-blue-700 bg-white dark:bg-gray-900 rounded-full w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center shadow-md hover:scale-110 transition z-10"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditProperty(
-                        property,
-                        properties.indexOf(property),
-                      );
-                    }}
-                    title="Edit Property"
-                  >
-                    <Pencil className="w-3 h-3 sm:w-4 sm:h-4" />
-                  </button>
-
-                  {/* Property Image */}
-                  <div className="mb-3 md:mb-4 -mx-4 sm:-mx-5 md:-mx-6 -mt-4 sm:-mt-5 md:-mt-6 rounded-t-xl overflow-hidden">
+                  {/* Property Image Container */}
+                  <div className="relative h-48 overflow-hidden">
                     <img
                       src={getPropertyImage(property)}
                       alt={property.name || "Property"}
-                      className="w-full h-32 sm:h-36 md:h-40 object-cover"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
-                  </div>
-
-                  <div className="mt-3 md:mt-4">
-                    <h2 className="text-lg sm:text-xl font-bold mb-1 text-gray-900 dark:text-white line-clamp-1">
-                      {property.name || "Unnamed Property"}
-                    </h2>
-                    <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400 line-clamp-1">
-                      <span>{property.location}</span>
-                      {property.city && <span>•</span>}
-                      {property.city && <span>{property.city}</span>}
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5 sm:space-y-2 mb-3 md:mb-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs sm:text-sm text-gray-600">
-                        Type:
-                      </span>
-                      <span className="text-xs sm:text-sm font-medium text-gray-900">
-                        {property.type}
-                      </span>
-                    </div>
-                    {property.unit && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                          Unit:
-                        </span>
-                        <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
-                          {property.unit}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                        Area:
-                      </span>
-                      <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
-                        {property.area}
-                      </span>
-                    </div>
-                    {property.zoning && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                          Zoning:
-                        </span>
-                        <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
-                          {property.zoning}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                        Status:
-                      </span>
-                      <span
-                        className={`text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 rounded-full ${
-                          property.status === "Vacant"
-                            ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                            : property.status === "Occupied"
-                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                              : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
-                        }`}
-                      >
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    
+                    {/* Status Badge */}
+                    <div className="absolute top-3 left-3 flex gap-2">
+                      <span className={cn(
+                        "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md text-white border",
+                        property.status === "Occupied" 
+                          ? "bg-green-500/80 border-green-400" 
+                          : property.status === "Vacant"
+                            ? "bg-red-500/80 border-red-400"
+                            : "bg-amber-500/80 border-amber-400"
+                      )}>
                         {property.status || "Vacant"}
                       </span>
                     </div>
+
+                    <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 translate-y-[-10px] group-hover:translate-y-0 transition-all duration-300">
+                      <button
+                        className="w-8 h-8 rounded-full bg-white/90 dark:bg-gray-900/90 flex items-center justify-center text-blue-600 shadow-lg hover:bg-blue-600 hover:text-white transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditProperty(property, idx);
+                        }}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        className="w-8 h-8 rounded-full bg-white/90 dark:bg-gray-900/90 flex items-center justify-center text-red-600 shadow-lg hover:bg-red-600 hover:text-white transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteProperty(property.id);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="pt-3 md:pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                    <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                      Tenants: {property.tenantCount}
+                  <div className="p-5 flex-1 flex flex-col">
+                    <div className="mb-4">
+                      <h2 className="text-xl font-bold text-gray-900 dark:text-white line-clamp-1 mb-1">
+                        {property.name || "Unnamed Property"}
+                      </h2>
+                      <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-300">
+                        <MapPin className="w-3.5 h-3.5 shrink-0" />
+                        <span className="line-clamp-1">
+                          {property.location}{property.city ? `, ${property.city}` : ""}{property.state ? ` (${property.state})` : ""}
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-base sm:text-lg font-bold text-green-600">
-                      {property.price}
+
+                    <div className="grid grid-cols-2 gap-y-3 gap-x-4 mb-4">
+                      <div className="space-y-0.5">
+                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-tight">Property Type</p>
+                        <div className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
+                          <Home className="w-3.5 h-3.5 text-blue-500" />
+                          <span>{property.type}</span>
+                        </div>
+                      </div>
+                      <div className="space-y-0.5">
+                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-tight">Area</p>
+                        <div className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
+                          <Maximize2 className="w-3.5 h-3.5 text-green-500" />
+                          <span>{property.area}</span>
+                        </div>
+                      </div>
+                      <div className="space-y-0.5">
+                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-tight">Tenants</p>
+                        <div className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
+                          <Users className="w-3.5 h-3.5 text-amber-500" />
+                          <span>{property.tenantCount} active</span>
+                        </div>
+                      </div>
+                      <div className="space-y-0.5">
+                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-tight">Unit</p>
+                        <div className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
+                          <AlertCircle className="w-3.5 h-3.5 text-purple-500" />
+                          <span>{property.unit || "N/A"}</span>
+                        </div>
+                      </div>
                     </div>
+
+                    <div className="mt-auto pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                      <p className="text-xs text-gray-400">Monthly Rent</p>
+                      <p className="text-base font-bold text-green-600 dark:text-green-400">
+                        {property.price}
+                      </p>
+                    </div>
+
+                    {(property.tenants.length > 0 || (property.amenities?.length || 0) > 0) && (
+                      <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-gray-100 dark:border-gray-800">
+                        {property.tenants.slice(0, 1).map((tenant) => (
+                          <span key={tenant.id} className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[10px] font-medium">
+                            {tenant.name}
+                          </span>
+                        ))}
+                        {property.amenities?.slice(0, 2).map((amenity) => (
+                          <span key={amenity} className="px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-[10px] font-medium">
+                            {amenity}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))
@@ -617,7 +697,7 @@ export default function RealEstateDashboard() {
 
         {/* Add/Edit Property Modal */}
         {showAddModal && (
-          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-[10000] p-4">
             <div className="bg-white dark:bg-[#181818] rounded-2xl shadow-2xl p-0 md:p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto relative">
               <button
                 className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl"
@@ -647,7 +727,7 @@ export default function RealEstateDashboard() {
                     }`}
                   />
                 </div>
-                <p className="text-gray-500 mb-6 text-base">
+                <p className="text-gray-500 dark:text-gray-300 mb-6 text-base">
                   {currentStep === 1
                     ? "Step 1: Basic Information"
                     : currentStep === 2
@@ -673,12 +753,12 @@ export default function RealEstateDashboard() {
                   {currentStep === 1 ? (
                     <>
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Property Name{" "}
-                          <span className="text-gray-400">(Optional)</span>
+                          <span className="text-gray-400 dark:text-gray-500">(Optional)</span>
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="e.g. Skyline Towers"
                           value={newProperty.name}
                           onChange={(e) =>
@@ -691,12 +771,12 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Parcel Number{" "}
-                          <span className="text-gray-400">(Optional)</span>
+                          <span className="text-gray-400 dark:text-gray-500">(Optional)</span>
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="APN / Tax ID"
                           value={newProperty.parcelNumber || ""}
                           onChange={(e) =>
@@ -709,11 +789,11 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2 md:col-span-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Street Address <span className="text-red-500">*</span>
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="123 Main St"
                           value={newProperty.location}
                           onChange={(e) =>
@@ -727,11 +807,11 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           City <span className="text-red-500">*</span>
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="City"
                           value={newProperty.city || ""}
                           onChange={(e) =>
@@ -745,12 +825,12 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           State / Province{" "}
                           <span className="text-red-500">*</span>
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="State"
                           value={newProperty.state || ""}
                           onChange={(e) =>
@@ -764,11 +844,11 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Zip Code <span className="text-red-500">*</span>
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="Zip"
                           value={newProperty.zip || ""}
                           onChange={(e) =>
@@ -781,8 +861,8 @@ export default function RealEstateDashboard() {
                         />
                       </div>
 
-                      <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                       <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Property Type <span className="text-red-500">*</span>
                         </label>
                         <Select
@@ -791,12 +871,12 @@ export default function RealEstateDashboard() {
                             setNewProperty({ ...newProperty, type: val })
                           }
                         >
-                          <SelectTrigger className="w-full">
+                          <SelectTrigger className="w-full dark:bg-gray-800 dark:text-white dark:border-gray-700">
                             <SelectValue placeholder="Select type" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="dark:bg-gray-900 dark:border-gray-700">
                             <SelectGroup>
-                              <SelectLabel>Residential</SelectLabel>
+                              <SelectLabel className="dark:text-gray-400">Residential</SelectLabel>
                               <SelectItem value="Condo">Condo</SelectItem>
                               <SelectItem value="Apartment">
                                 Apartment
@@ -809,7 +889,7 @@ export default function RealEstateDashboard() {
                               </SelectItem>
                             </SelectGroup>
                             <SelectGroup>
-                              <SelectLabel>Commercial</SelectLabel>
+                              <SelectLabel className="dark:text-gray-400">Commercial</SelectLabel>
                               <SelectItem value="Office">Office</SelectItem>
                               <SelectItem value="Retail">Retail</SelectItem>
                               <SelectItem value="Industrial">
@@ -821,11 +901,11 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Unit / Suite
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="e.g. 3 BHK or Apt 101"
                           value={newProperty.unit}
                           onChange={(e) =>
@@ -838,11 +918,11 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Price / Rent <span className="text-red-500">*</span>
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="e.g. $3500/month"
                           value={newProperty.price}
                           onChange={(e) =>
@@ -856,12 +936,12 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Area (sq ft) <span className="text-red-500">*</span>
                         </label>
                         <div className="flex">
                           <input
-                            className="w-full border rounded-l-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 border-r-0"
+                            className="w-full border dark:border-gray-700 rounded-l-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 border-r-0 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                             placeholder="1500"
                             type="number"
                             value={newProperty.area}
@@ -873,7 +953,7 @@ export default function RealEstateDashboard() {
                             }
                             required
                           />
-                          <span className="bg-gray-100 border border-gray-300 border-l-0 rounded-r-lg px-3 flex items-center text-gray-500">
+                          <span className="bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 border-l-0 rounded-r-lg px-3 flex items-center text-gray-500 dark:text-gray-300">
                             sq ft
                           </span>
                         </div>
@@ -898,7 +978,7 @@ export default function RealEstateDashboard() {
                   ) : currentStep === 2 ? (
                     <>
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Zoning
                         </label>
                         <Select
@@ -907,10 +987,10 @@ export default function RealEstateDashboard() {
                             setNewProperty({ ...newProperty, zoning: val })
                           }
                         >
-                          <SelectTrigger className="w-full">
+                          <SelectTrigger className="w-full dark:bg-gray-800 dark:text-white dark:border-gray-700">
                             <SelectValue placeholder="Select Zoning" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="dark:bg-gray-900 dark:border-gray-700">
                             <SelectItem value="Residential (R)">
                               Residential
                             </SelectItem>
@@ -928,11 +1008,11 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Lease Duration
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="e.g. 1 Year"
                           value={newProperty.leaseDuration}
                           onChange={(e) =>
@@ -945,7 +1025,7 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Status
                         </label>
                         <Select
@@ -954,10 +1034,10 @@ export default function RealEstateDashboard() {
                             setNewProperty({ ...newProperty, status: val })
                           }
                         >
-                          <SelectTrigger className="w-full">
+                          <SelectTrigger className="w-full dark:bg-gray-800 dark:text-white dark:border-gray-700">
                             <SelectValue placeholder="Select status" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="dark:bg-gray-900 dark:border-gray-700">
                             <SelectItem value="Vacant">Vacant</SelectItem>
                             <SelectItem value="Occupied">Occupied</SelectItem>
                             <SelectItem value="Under Maintenance">
@@ -968,11 +1048,11 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Systems (HVAC/Solar)
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="e.g. Central HVAC, Solar"
                           value={newProperty.systems || ""}
                           onChange={(e) =>
@@ -985,14 +1065,14 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2 md:col-span-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Structures{" "}
-                          <span className="text-gray-400">
+                          <span className="text-gray-400 dark:text-gray-500">
                             (Comma separated)
                           </span>
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="e.g. Garage, Pool House, Shed"
                           value={
                             Array.isArray(newProperty.structures)
@@ -1006,14 +1086,14 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2 md:col-span-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Amenities{" "}
-                          <span className="text-gray-400">
+                          <span className="text-gray-400 dark:text-gray-500">
                             (Comma separated)
                           </span>
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="e.g. Pool, Gym, Concierge"
                           value={
                             Array.isArray(newProperty.amenities)
@@ -1027,14 +1107,14 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2 md:col-span-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Utilities{" "}
-                          <span className="text-gray-400">
+                          <span className="text-gray-400 dark:text-gray-500">
                             (Comma separated)
                           </span>
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="e.g. Hydro, Water, Gas, Internet"
                           value={
                             Array.isArray(newProperty.utilities)
@@ -1057,11 +1137,11 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Purchase Price
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="e.g. $500,000"
                           value={newProperty.purchasePrice || ""}
                           onChange={(e) =>
@@ -1074,11 +1154,11 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Current Value
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="e.g. $550,000"
                           value={newProperty.currentValue || ""}
                           onChange={(e) =>
@@ -1091,12 +1171,12 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Purchase Date
                         </label>
                         <input
                           type="date"
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white"
                           value={newProperty.purchaseDate || ""}
                           onChange={(e) =>
                             setNewProperty({
@@ -1108,12 +1188,12 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Lease Start Date
                         </label>
                         <input
                           type="date"
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white"
                           value={newProperty.leaseStartDate || ""}
                           onChange={(e) =>
                             setNewProperty({
@@ -1125,12 +1205,12 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Lease End Date
                         </label>
                         <input
                           type="date"
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white"
                           value={newProperty.leaseEndDate || ""}
                           onChange={(e) =>
                             setNewProperty({
@@ -1146,17 +1226,17 @@ export default function RealEstateDashboard() {
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                           Monthly Expenses
                         </h3>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
                           Track your recurring costs
                         </p>
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Maintenance
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="$0"
                           value={newProperty.expenses?.maintenance || ""}
                           onChange={(e) =>
@@ -1172,11 +1252,11 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Property Taxes
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="$0"
                           value={newProperty.expenses?.taxes || ""}
                           onChange={(e) =>
@@ -1192,11 +1272,11 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Insurance
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="$0"
                           value={newProperty.expenses?.insurance || ""}
                           onChange={(e) =>
@@ -1212,11 +1292,11 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Utilities
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="$0"
                           value={newProperty.expenses?.utilities || ""}
                           onChange={(e) =>
@@ -1232,11 +1312,11 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Loan/Mortgage EMI
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="$0"
                           value={newProperty.expenses?.loanEMI || ""}
                           onChange={(e) =>
@@ -1252,11 +1332,11 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Management Fees
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="$0"
                           value={newProperty.expenses?.managementFees || ""}
                           onChange={(e) =>
@@ -1272,11 +1352,11 @@ export default function RealEstateDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           Other Expenses
                         </label>
                         <input
-                          className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
                           placeholder="$0"
                           value={newProperty.expenses?.other || ""}
                           onChange={(e) =>
@@ -1342,6 +1422,5 @@ export default function RealEstateDashboard() {
           onConfirm={confirmDelete}
         />
       </main>
-    </div>
   );
 }
