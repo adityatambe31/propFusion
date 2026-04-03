@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export default async function proxy(request: NextRequest) {
-  const sessionToken = request.cookies.get("better-auth.session_token");
+  const sessionToken =
+    request.cookies.get("better-auth.session_token") ||
+    request.cookies.get("__Secure-better-auth.session_token");
+
+  const shouldDebugAuth =
+    process.env.AUTH_DEBUG === "true" || process.env.NODE_ENV === "production";
 
   // Allow access to 2FA verification page without full session
   if (request.nextUrl.pathname === "/dashboard/account/verify-2fa") {
@@ -20,6 +25,13 @@ export default async function proxy(request: NextRequest) {
   // If trying to access dashboard without session token, redirect to sign-in
   if (request.nextUrl.pathname.startsWith("/dashboard")) {
     if (!sessionToken?.value) {
+      if (shouldDebugAuth) {
+        console.log("[AUTH DEBUG] middleware redirect", {
+          path: request.nextUrl.pathname,
+          host: request.headers.get("host"),
+          cookieNames: request.cookies.getAll().map((c) => c.name),
+        });
+      }
       return NextResponse.redirect(new URL("/auth/sign-in", request.url));
     }
   }
