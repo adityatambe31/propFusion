@@ -60,14 +60,43 @@ const client = new MongoClient(process.env.MONGODB_URI, {
 // Get database after connection
 const db = client.db("propfusion");
 
+const isLocalURL = (url?: string) =>
+  Boolean(url && /(localhost|127\.0\.0\.1)/i.test(url));
+
+const inferredVercelURL = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : undefined;
+
+const envBetterAuthURL = process.env.BETTER_AUTH_URL;
+const envPublicAppURL = process.env.NEXT_PUBLIC_APP_URL;
+const inProduction = process.env.NODE_ENV === "production";
+
+const appBaseURL =
+  (inProduction && !isLocalURL(envBetterAuthURL) ? envBetterAuthURL : undefined) ||
+  (inProduction && !isLocalURL(envPublicAppURL) ? envPublicAppURL : undefined) ||
+  envBetterAuthURL ||
+  envPublicAppURL ||
+  inferredVercelURL ||
+  "http://localhost:3000";
+
+const trustedOrigins = Array.from(
+  new Set(
+    [
+      process.env.BETTER_AUTH_URL,
+      process.env.NEXT_PUBLIC_APP_URL,
+      inferredVercelURL,
+      appBaseURL,
+    ].filter(Boolean),
+  ),
+) as string[];
+
 export const auth = betterAuth({
   database: mongodbAdapter(db),
   appName: "PropFusion",
-  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
-  trustedOrigins: [
-    process.env.BETTER_AUTH_URL || "http://localhost:3000",
-    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-  ],
+  baseURL: appBaseURL,
+  trustedOrigins,
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 6,
