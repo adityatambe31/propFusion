@@ -567,6 +567,7 @@ export default function RealEstateDashboard() {
                 >
                   {/* Property Image Container */}
                   <div className="relative h-48 overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={getPropertyImage(property)}
                       alt={property.name || "Property"}

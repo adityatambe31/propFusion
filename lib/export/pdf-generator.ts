@@ -143,7 +143,7 @@ export function generateLandPortfolioPDF(
   const totalLands = lands.length;
   const crops = new Set(lands.map((l) => l.crop));
   const totalArea = lands.reduce((sum, l) => {
-    const areaNum = parseFloat(l.area);
+    const areaNum = parseFloat(l.area || "0");
     return sum + (isNaN(areaNum) ? 0 : areaNum);
   }, 0);
 

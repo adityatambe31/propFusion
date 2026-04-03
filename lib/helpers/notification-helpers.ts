@@ -22,11 +22,32 @@ export interface AppNotification {
   createdAt: string;
 }
 
-const STORAGE_KEY = "propfusion_notifications";
 const READ_KEY = "propfusion_notifications_read";
 const LAST_BROWSER_NOTIF_KEY = "propfusion_last_browser_notif_date";
 export const NOTIFICATION_SETTINGS_UPDATED_EVENT =
   "propfusion:notification-settings-updated";
+
+interface NotificationTenant {
+  id?: string;
+  name: string;
+  rentDueDate?: string;
+}
+
+interface NotificationPropertyInput {
+  id: string;
+  name: string;
+  tenants?: NotificationTenant[];
+  leaseEndDate?: string;
+  lastMaintenanceDate?: string;
+}
+
+interface NotificationLandInput {
+  id: string;
+  name: string;
+  crop?: string;
+  tenants?: NotificationTenant[];
+  nextHarvestDate?: string;
+}
 
 /* ─── Persist helpers ──────────────────────────────────────────── */
 
@@ -106,10 +127,9 @@ function daysUntil(dateStr?: string): number | null {
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function deriveNotifications(
-  properties: any[],
-  lands: any[],
+  properties: NotificationPropertyInput[],
+  lands: NotificationLandInput[],
   settings: NotificationSettings
 ): AppNotification[] {
   if (!settings.enabled) return [];

@@ -7,7 +7,7 @@ import {
   AuthLoading,
 } from "@daveyplate/better-auth-ui";
 import { CustomTwoFactorCard } from "@/components/auth/CustomTwoFactorCard";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Bell, BellOff } from "lucide-react";
 import {
@@ -73,7 +73,7 @@ function ToggleRow({
 
 /* ─── Notifications Tab ───────────────────────────────────────── */
 function NotificationsTab() {
-  const [settings] = useState<NotificationSettings | null>(() =>
+  const [settings, setSettings] = useState<NotificationSettings | null>(() =>
     getNotificationSettings(),
   );
   const [browserPermission, setBrowserPermission] = useState<
@@ -215,12 +215,12 @@ function NotificationsTab() {
         </h4>
         <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
           Receive a native browser notification once a day for urgent alerts,
-          even when the tab isn't in focus.
+          even when the tab isn&apos;t in focus.
         </p>
 
         {browserPermission === "unsupported" ? (
           <p className="text-xs text-gray-400 italic">
-            Your browser doesn't support push notifications.
+            Your browser doesn&apos;t support push notifications.
           </p>
         ) : browserPermission === "denied" ? (
           <p className="text-xs text-amber-600 dark:text-amber-400">

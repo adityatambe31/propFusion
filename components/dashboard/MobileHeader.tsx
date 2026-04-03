@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, Bell } from "lucide-react";
+import { Menu } from "lucide-react";
 import { NotificationBell } from "./NotificationPanel";
 
 export function MobileHeader({ 

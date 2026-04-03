@@ -13,7 +13,6 @@ const ReportPDFActions = dynamic(
 );
 import { motion, AnimatePresence } from "motion/react";
 import {
-  FileText,
   TrendingUp,
   Sprout,
   BarChart3,

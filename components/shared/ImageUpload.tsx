@@ -80,6 +80,7 @@ export function ImageUpload({
               key={index}
               className="relative aspect-video rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 group"
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={image}
                 alt={`Property image ${index + 1}`}
@@ -207,6 +208,7 @@ export function SingleImageUpload({
         <div
           className={`relative ${aspectRatio === "square" ? "aspect-square" : "aspect-video"} rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700`}
         >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={image} alt={label} className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
             <label className="cursor-pointer">

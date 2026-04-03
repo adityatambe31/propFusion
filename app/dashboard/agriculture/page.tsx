@@ -10,10 +10,9 @@ import {
   SelectGroup,
   SelectLabel,
 } from "@/components/ui/select";
-import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Filter, LayoutGrid, Map as MapIcon, ChevronRight, Sprout, Droplets, Thermometer, Wind, Pencil, Trash2, Calendar, FileText, TrendingUp, AlertTriangle } from "lucide-react";
+import { Search, LayoutGrid, Map as MapIcon, Sprout, Pencil, Trash2, TrendingUp } from "lucide-react";
 import {
   useAgricultureContext,
   Land,
@@ -24,8 +23,6 @@ import { geocodeAddress } from "@/lib/helpers/geocode";
 import { SingleImageUpload } from "@/components/shared/ImageUpload";
 import { SearchFilter, useSearchFilter } from "@/components/shared/SearchFilter";
 import { 
-  Home, 
-  Users, 
   DollarSign, 
   AlertCircle, 
   PlusCircle,
@@ -465,6 +462,7 @@ export default function AgricultureDashboard() {
                 >
                   {/* Land Image Container */}
                   <div className="relative h-48 overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={getLandImage(land)}
                       alt={land.name || "Land"}

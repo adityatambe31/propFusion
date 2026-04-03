@@ -89,7 +89,7 @@ export interface ReportData {
   stats: { label: string; value: string; accent?: string }[];
   rows: Record<string, string>[];
   columns: string[];
-  assets?: (AssetDetail | Record<string, unknown>)[];
+  assets?: AssetDetail[];
 }
 
 export type ReportMode = "summary" | "detailed";
@@ -915,10 +915,10 @@ function AssetProfilePage({
       )}
 
       {/* Tenants */}
-      {asset.tenants?.length > 0 && (isSummary || isOccupancy || isMaintenance) && (
+      {(asset.tenants ?? []).length > 0 && (isSummary || isOccupancy || isMaintenance) && (
         <>
-          <Text style={s.sectionTitle}>Tenants ({asset.tenants.length})</Text>
-          {asset.tenants.map((t, i) => (
+          <Text style={s.sectionTitle}>Tenants ({asset.tenants?.length ?? 0})</Text>
+          {(asset.tenants ?? []).map((t, i) => (
             <View key={t.id || i} style={s.tenantRow}>
               <Text style={s.tenantName}>
                 • {t.name}

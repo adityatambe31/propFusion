@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AuthLoading } from "@daveyplate/better-auth-ui";
 import { authClient } from "@/lib/auth/auth-client";
 import { getUserAvatarColor, getUserInitials } from "@/lib/helpers/avatar-utils";
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useMemo } from "react";
 import { toast } from "sonner";
 
 function ProfileSkeleton() {

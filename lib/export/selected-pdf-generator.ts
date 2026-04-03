@@ -145,7 +145,7 @@ export function generateSelectedLandsReportPDF(
   // Summary
   const uniqueCrops = new Set(lands.map((l) => l.crop)).size;
   const totalArea = lands.reduce((sum, l) => {
-    const areaNum = parseFloat(l.area);
+    const areaNum = parseFloat(l.area || "0");
     return sum + (isNaN(areaNum) ? 0 : areaNum);
   }, 0);
   const totalValue = lands.reduce(
