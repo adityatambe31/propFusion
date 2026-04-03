@@ -4,13 +4,35 @@ import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { twoFactor } from "better-auth/plugins";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-const fromEmail = process.env.RESEND_FROM_EMAIL;
+const fromEmail = process.env.RESEND_FROM_EMAIL || "PropFusion <onboarding@resend.dev>";
 
-if (!fromEmail) {
-  throw new Error(
-    "RESEND_FROM_EMAIL is not defined. Please set it in your .env.local to a verified sender/domain in Resend.",
-  );
+async function sendTransactionalEmail({
+  to,
+  subject,
+  html,
+}: {
+  to: string | string[];
+  subject: string;
+  html: string;
+}) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn(
+      "RESEND_API_KEY is not configured. Skipping transactional email:",
+      subject,
+      "->",
+      to,
+    );
+    return;
+  }
+
+  const resend = new Resend(apiKey);
+  await resend.emails.send({
+    from: fromEmail,
+    to,
+    subject,
+    html,
+  });
 }
 
 if (!process.env.MONGODB_URI) {
@@ -53,8 +75,7 @@ export const auth = betterAuth({
     sendResetPassword: async ({ user, url }) => {
       const name = user.name || user.email.split("@")[0];
       try {
-        const result = await resend.emails.send({
-          from: fromEmail,
+        await sendTransactionalEmail({
           to: user.email,
           subject: "Reset your PropFusion password",
           html: `
@@ -70,7 +91,7 @@ export const auth = betterAuth({
             </div>
           `,
         });
-        console.log(`✅ Password reset email sent to ${user.email}`, result);
+        console.log(`✅ Password reset email sent to ${user.email}`);
       } catch (error) {
         console.error(
           `❌ Failed to send password reset email to ${user.email}:`,
@@ -97,8 +118,7 @@ export const auth = betterAuth({
         }
         const finalUrl = verificationUrl.toString();
 
-        const result = await resend.emails.send({
-          from: fromEmail,
+        await sendTransactionalEmail({
           to: user.email,
           subject: "Verify your email – PropFusion",
           html: `
@@ -114,7 +134,7 @@ export const auth = betterAuth({
             </div>
           `,
         });
-        console.log(`✅ Verification email sent to ${user.email}`, result);
+        console.log(`✅ Verification email sent to ${user.email}`);
       } catch (error) {
         console.error(`❌ Failed to send verification email to ${user.email}:`, error);
         throw error;
@@ -135,8 +155,7 @@ export const auth = betterAuth({
       enabled: true,
       sendChangeEmailVerification: async (data) => {
         const name = data.user.name || data.user.email.split("@")[0];
-        await resend.emails.send({
-          from: fromEmail,
+        await sendTransactionalEmail({
           to: data.newEmail,
           subject: "Verify your new email – PropFusion",
           html: `
