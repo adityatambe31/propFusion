@@ -73,19 +73,17 @@ function ToggleRow({
 
 /* ─── Notifications Tab ───────────────────────────────────────── */
 function NotificationsTab() {
-  const [settings, setSettings] = useState<NotificationSettings | null>(null);
+  const [settings] = useState<NotificationSettings | null>(() =>
+    getNotificationSettings(),
+  );
   const [browserPermission, setBrowserPermission] = useState<
     NotificationPermission | "unsupported"
-  >("default");
-
-  useEffect(() => {
-    setSettings(getNotificationSettings());
+  >(() => {
     if (!("Notification" in window)) {
-      setBrowserPermission("unsupported");
-    } else {
-      setBrowserPermission(Notification.permission);
+      return "unsupported";
     }
-  }, []);
+    return Notification.permission;
+  });
 
   if (!settings) return null;
 
@@ -258,17 +256,16 @@ function NotificationsTab() {
 
 /* ─── Page ─────────────────────────────────────────────────────── */
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<
-    "security" | "account" | "notifications"
-  >("account");
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Support ?tab=notifications deep-link from the notification panel
-  useEffect(() => {
+  const [activeTab, setActiveTab] = useState<
+    "security" | "account" | "notifications"
+  >(() => {
     const tab = searchParams.get("tab");
-    if (tab === "notifications") setActiveTab("notifications");
-  }, [searchParams]);
+    if (tab === "notifications") return "notifications";
+    return "account";
+  });
 
   const backUrl = useMemo(() => {
     const from = searchParams.get("from");

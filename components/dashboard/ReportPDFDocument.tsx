@@ -5,40 +5,40 @@ import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 
 /* ─── Types ─── */
 export interface PropertyExpenses {
-  maintenance: string;
-  taxes: string;
-  insurance: string;
-  utilities: string;
-  loanEMI: string;
-  managementFees: string;
-  other: string;
+  maintenance?: string;
+  taxes?: string;
+  insurance?: string;
+  utilities?: string;
+  loanEMI?: string;
+  managementFees?: string;
+  other?: string;
 }
 
 export interface LandExpenses {
-  seeds: string;
-  labor: string;
-  equipment: string;
-  fertilizers: string;
-  pesticides: string;
-  irrigation: string;
-  taxes: string;
-  insurance: string;
-  other: string;
+  seeds?: string;
+  labor?: string;
+  equipment?: string;
+  fertilizers?: string;
+  pesticides?: string;
+  irrigation?: string;
+  taxes?: string;
+  insurance?: string;
+  other?: string;
 }
 
 export interface AssetDetail {
   /* Common */
   id: string;
   name: string;
-  location: string;
+  location?: string;
   city?: string;
   state?: string;
   zip?: string;
-  area: string;
-  leaseDuration: string;
+  area?: string;
+  leaseDuration?: string;
   parcelNumber?: string;
   zoning?: string;
-  tenants: {
+  tenants?: {
     id: string;
     name: string;
     rentAmount?: string;
@@ -61,7 +61,7 @@ export interface AssetDetail {
   purchasePrice?: string;
   purchaseDate?: string;
   currentValue?: string;
-  expenses?: PropertyExpenses;
+  expenses?: PropertyExpenses | LandExpenses | Record<string, string>;
   lastMaintenanceDate?: string;
   leaseStartDate?: string;
   leaseEndDate?: string;
@@ -89,7 +89,7 @@ export interface ReportData {
   stats: { label: string; value: string; accent?: string }[];
   rows: Record<string, string>[];
   columns: string[];
-  assets?: AssetDetail[];
+  assets?: (AssetDetail | Record<string, unknown>)[];
 }
 
 export type ReportMode = "summary" | "detailed";

@@ -754,14 +754,13 @@ export default function ReportsPage() {
   const reportTypes =
     assetType === "realestate" ? REPORT_TYPES_RE : REPORT_TYPES_AG;
 
-  useEffect(() => {
-    if (!reportTypes.some((rt) => rt.value === reportType)) {
-      setReportType(reportTypes[0].value);
-    }
-  }, [reportTypes, reportType]);
+  // Ensure reportType is valid for the current asset type
+  const validReportType = reportTypes.some((rt) => rt.value === reportType)
+    ? reportType
+    : reportTypes[0].value;
 
   const activeReportTypeLabel =
-    reportTypes.find((rt) => rt.value === reportType)?.label || "Report";
+    reportTypes.find((rt) => rt.value === validReportType)?.label || "Report";
 
   const accentStyles =
     assetType === "realestate"
@@ -800,7 +799,7 @@ export default function ReportsPage() {
     setTimeout(() => {
       const result = generateReport(
         assetType,
-        reportType,
+        validReportType,
         selectedAssets,
         properties,
         lands,
