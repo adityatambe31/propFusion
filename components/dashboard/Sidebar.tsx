@@ -614,10 +614,10 @@ export function Sidebar({
                   className={`w-8 h-8 shrink-0 rounded-full ${!session?.user?.image ? `bg-linear-to-b ${avatarColor.from} ${avatarColor.to}` : ""} flex items-center justify-center text-white font-semibold text-xs sm:text-sm overflow-hidden`}
                 >
                   {session?.user?.image ? (
-                    <Image
+                    <img
                       src={session.user.image}
                       alt={displayName}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover rounded-full"
                       width={32}
                       height={32}
                     />
